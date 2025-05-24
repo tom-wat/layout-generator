@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Layers, Package, Target, Grid as GridIcon, PanelLeft, ToggleLeft, RectangleVertical, Grid3X3, Layout, Network, Frame, Film, Eye } from 'lucide-react';
+import { Layers, Package, Target, Grid as GridIcon, PanelLeft, ToggleLeft, RectangleVertical, Grid3X3, Layout, Network, Frame, Film, Eye, Sparkles } from 'lucide-react';
 import FileIcon from './components/FileIcon';
 import Stack from './components/Stack';
 import Box from './components/Box';
@@ -14,6 +14,7 @@ import SubgridLayout from './components/Subgrid';
 import FrameLayout from './components/Frame';
 import ReelLayout from './components/Reel';
 import ImposterLayout from './components/Imposter';
+import IconLayout from './components/Icon';
 
 function App() {
   const [activeGenerator, setActiveGenerator] = useState('stack');
@@ -187,6 +188,18 @@ function App() {
                 <Eye className="w-4 h-4 mr-2" />
                 Imposter
               </button>
+
+              <button
+                onClick={() => setActiveGenerator('icon')}
+                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors flex-shrink-0 ${
+                  activeGenerator === 'icon'
+                    ? 'bg-amber-600 text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Icon
+              </button>
             </nav>
           </div>
         </div>
@@ -207,6 +220,7 @@ function App() {
         {activeGenerator === 'frame' && <FrameLayout />}
         {activeGenerator === 'reel' && <ReelLayout />}
         {activeGenerator === 'imposter' && <ImposterLayout />}
+        {activeGenerator === 'icon' && <IconLayout />}
       </div>
     </div>
   );

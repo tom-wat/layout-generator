@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Layers, Package, Target, Grid } from 'lucide-react';
+import { Layers, Package, Target, Grid, PanelLeft } from 'lucide-react';
 import FileIcon from './components/FileIcon';
 import Stack from './components/Stack';
 import Box from './components/Box';
 import Center from './components/Center';
 import Cluster from './components/Cluster';
+import Sidebar from './components/Sidebar';
 
 function App() {
   const [activeGenerator, setActiveGenerator] = useState('stack');
@@ -70,6 +71,18 @@ function App() {
                 <Grid className="w-4 h-4 mr-2" />
                 Cluster
               </button>
+
+              <button
+                onClick={() => setActiveGenerator('sidebar')}
+                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors flex-shrink-0 ${
+                  activeGenerator === 'sidebar'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                <PanelLeft className="w-4 h-4 mr-2" />
+                Sidebar
+              </button>
             </nav>
           </div>
         </div>
@@ -81,6 +94,7 @@ function App() {
         {activeGenerator === 'box' && <Box />}
         {activeGenerator === 'center' && <Center />}
         {activeGenerator === 'cluster' && <Cluster />}
+        {activeGenerator === 'sidebar' && <Sidebar />}
       </div>
     </div>
   );

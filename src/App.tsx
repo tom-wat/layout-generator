@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Layers, Package, Target, Grid as GridIcon, PanelLeft, ToggleLeft, RectangleVertical, Grid3X3, Layout, Network } from 'lucide-react';
+import { Layers, Package, Target, Grid as GridIcon, PanelLeft, ToggleLeft, RectangleVertical, Grid3X3, Layout, Network, Frame } from 'lucide-react';
 import FileIcon from './components/FileIcon';
 import Stack from './components/Stack';
 import Box from './components/Box';
@@ -11,6 +11,7 @@ import Cover from './components/Cover';
 import GridLayout from './components/Grid';
 import GridAreaLayout from './components/GridArea';
 import SubgridLayout from './components/Subgrid';
+import FrameLayout from './components/Frame';
 
 function App() {
   const [activeGenerator, setActiveGenerator] = useState('stack');
@@ -28,7 +29,7 @@ function App() {
               <h1 className="text-xl font-bold text-white whitespace-nowrap hidden md:block">Layout Component Generator</h1>
             </div>
             
-            <nav className="flex space-x-4 overflow-x-auto min-w-0 flex-1">
+            <nav className="flex space-x-4 overflow-x-auto min-w-0 flex-1 custom-scrollbar">
               <button
                 onClick={() => setActiveGenerator('stack')}
                 className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors flex-shrink-0 ${
@@ -148,6 +149,18 @@ function App() {
                 <Network className="w-4 h-4 mr-2" />
                 Subgrid
               </button>
+
+              <button
+                onClick={() => setActiveGenerator('frame')}
+                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors flex-shrink-0 ${
+                  activeGenerator === 'frame'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                <Frame className="w-4 h-4 mr-2" />
+                Frame
+              </button>
             </nav>
           </div>
         </div>
@@ -165,6 +178,7 @@ function App() {
         {activeGenerator === 'grid' && <GridLayout />}
         {activeGenerator === 'gridarea' && <GridAreaLayout />}
         {activeGenerator === 'subgrid' && <SubgridLayout />}
+        {activeGenerator === 'frame' && <FrameLayout />}
       </div>
     </div>
   );

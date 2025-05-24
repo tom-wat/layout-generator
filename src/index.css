@@ -56,6 +56,43 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+/* カスタムスクロールバー (Webkit) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #374151;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #6b7280;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Firefox用のスクロールバー */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #6b7280 #374151;
+}
+
+/* ヘッダーナビゲーション専用のスクロールバー - 非表示 */
+.custom-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Firefox用のカスタムスクロールバー - 非表示 */
+.custom-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;

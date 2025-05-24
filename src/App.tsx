@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Layers, Package, Target, Grid, PanelLeft } from 'lucide-react';
+import { Layers, Package, Target, Grid, PanelLeft, ToggleLeft } from 'lucide-react';
 import FileIcon from './components/FileIcon';
 import Stack from './components/Stack';
 import Box from './components/Box';
 import Center from './components/Center';
 import Cluster from './components/Cluster';
 import Sidebar from './components/Sidebar';
+import Switcher from './components/Switcher';
 
 function App() {
   const [activeGenerator, setActiveGenerator] = useState('stack');
@@ -83,6 +84,18 @@ function App() {
                 <PanelLeft className="w-4 h-4 mr-2" />
                 Sidebar
               </button>
+
+              <button
+                onClick={() => setActiveGenerator('switcher')}
+                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors flex-shrink-0 ${
+                  activeGenerator === 'switcher'
+                    ? 'bg-emerald-600 text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                <ToggleLeft className="w-4 h-4 mr-2" />
+                Switcher
+              </button>
             </nav>
           </div>
         </div>
@@ -95,6 +108,7 @@ function App() {
         {activeGenerator === 'center' && <Center />}
         {activeGenerator === 'cluster' && <Cluster />}
         {activeGenerator === 'sidebar' && <Sidebar />}
+        {activeGenerator === 'switcher' && <Switcher />}
       </div>
     </div>
   );

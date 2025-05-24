@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Layers, Package, Target, Grid, PanelLeft, ToggleLeft, RectangleVertical } from 'lucide-react';
+import { Layers, Package, Target, Grid as GridIcon, PanelLeft, ToggleLeft, RectangleVertical, Grid3X3, Layout } from 'lucide-react';
 import FileIcon from './components/FileIcon';
 import Stack from './components/Stack';
 import Box from './components/Box';
@@ -8,6 +8,8 @@ import Cluster from './components/Cluster';
 import Sidebar from './components/Sidebar';
 import Switcher from './components/Switcher';
 import Cover from './components/Cover';
+import GridLayout from './components/Grid';
+import GridAreaLayout from './components/GridArea';
 
 function App() {
   const [activeGenerator, setActiveGenerator] = useState('stack');
@@ -70,7 +72,7 @@ function App() {
                     : 'text-gray-300 hover:text-white hover:bg-gray-700'
                 }`}
               >
-                <Grid className="w-4 h-4 mr-2" />
+                <GridIcon className="w-4 h-4 mr-2" />
                 Cluster
               </button>
 
@@ -109,6 +111,30 @@ function App() {
                 <RectangleVertical className="w-4 h-4 mr-2" />
                 Cover
               </button>
+
+              <button
+                onClick={() => setActiveGenerator('grid')}
+                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors flex-shrink-0 ${
+                  activeGenerator === 'grid'
+                    ? 'bg-cyan-600 text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                <Grid3X3 className="w-4 h-4 mr-2" />
+                Grid
+              </button>
+
+              <button
+                onClick={() => setActiveGenerator('gridarea')}
+                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors flex-shrink-0 ${
+                  activeGenerator === 'gridarea'
+                    ? 'bg-teal-600 text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                <Layout className="w-4 h-4 mr-2" />
+                Grid Area
+              </button>
             </nav>
           </div>
         </div>
@@ -123,6 +149,8 @@ function App() {
         {activeGenerator === 'sidebar' && <Sidebar />}
         {activeGenerator === 'switcher' && <Switcher />}
         {activeGenerator === 'cover' && <Cover />}
+        {activeGenerator === 'grid' && <GridLayout />}
+        {activeGenerator === 'gridarea' && <GridAreaLayout />}
       </div>
     </div>
   );

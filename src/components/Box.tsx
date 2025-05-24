@@ -117,8 +117,8 @@ const BoxLayoutGenerator = () => {
   };
 
   return (
-    <div className="bg-gray-900 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="bg-gray-900">
+      <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-white mb-2">Box Layout Generator</h2>

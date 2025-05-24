@@ -13,6 +13,29 @@ export const LAYOUT_COMPONENTS = {
 
 export type LayoutComponentType = keyof typeof LAYOUT_COMPONENTS;
 
+// モジュラーシステム関連の型定義
+export interface ModularScale {
+  name: string;
+  ratio: number;
+}
+
+export type SizeUnit = 'px' | 'rem' | 'em';
+
+export interface ModularSystemConfig {
+  baseFontSize: number;
+  baseSpacing: number;
+  fontScale: ModularScale;
+  spacingScale: ModularScale;
+  steps: number;
+  fontUnit: SizeUnit;
+  spacingUnit: SizeUnit;
+}
+
+export interface GeneratedSizes {
+  fontSizes: Record<string, string>;
+  spacing: Record<string, string>;
+}
+
 // セクション型定義
 export interface Section {
   id: string;
@@ -46,6 +69,8 @@ export interface DesignSystem {
     fontSizes: Record<string, string>;
   };
   breakpoints: Record<string, string>;
+  modularSystem?: ModularSystemConfig;
+  generatedSizes?: GeneratedSizes;
 }
 
 export type TabType = 'builder' | 'preview' | 'code';

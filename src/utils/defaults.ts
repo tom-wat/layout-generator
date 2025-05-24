@@ -1,4 +1,5 @@
 import type { LayoutComponentType } from '../types';
+import type { ModularSystemConfig, ModularScale, SizeUnit } from '../types';
 
 // デフォルトプロップス取得
 export const getDefaultProps = (componentType: LayoutComponentType): Record<string, unknown> => {
@@ -84,6 +85,41 @@ export const getDefaultDesignSystem = () => ({
     wide: '1440px'
   }
 });
+
+// モジュラーシステムのデフォルト設定
+export const getDefaultModularSystemConfig = (): ModularSystemConfig => ({
+  baseFontSize: 16,
+  baseSpacing: 16,
+  fontScale: { name: 'Major Third', ratio: 1.250},
+  spacingScale: { name: 'Major Third', ratio: 1.250},
+  steps: 10,
+  fontUnit: 'rem' as SizeUnit,
+  spacingUnit: 'rem' as SizeUnit
+});
+
+// よく使われるモジュラースケール
+export const getPopularModularScales = (): ModularScale[] => [
+  { name: 'Minor Second', ratio: 1.067},
+  { name: 'Major Second', ratio: 1.125},
+  { name: 'Minor Third', ratio: 1.200},
+  { name: 'Major Third', ratio: 1.250},
+  { name: 'Perfect Fourth', ratio: 1.333},
+  { name: 'Golden Ratio', ratio: 1.618}
+];
+
+// CSS変数として出力するためのヘルパー関数
+export const generateCSSVariables = (fontSizes: Record<string, string>, spacing: Record<string, string>) => {
+  const fontVariables = Object.entries(fontSizes).map(([key, value]) => `--text-${key}: ${value};`).join('\n  ');
+  const spacingVariables = Object.entries(spacing).map(([key, value]) => `--space-${key}: ${value};`).join('\n  ');
+  
+  return `:root {
+  /* Typography Scale */
+  ${fontVariables}
+  
+  /* Spacing Scale */
+  ${spacingVariables}
+}`;
+};
 
 // 初期セクションデータ
 export const getInitialSections = () => [

@@ -224,8 +224,8 @@ const WebsitePageBuilder: React.FC = () => {
   return (
     <div className="bg-gray-900 min-h-screen">
       {/* ヘッダー */}
-      <div className="bg-gray-800 border-b border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
+      <div className="bg-gray-800 border-b border-gray-700 py-4">
+        <div className="flex items-center justify-between max-w-7xl mx-auto px-6">
           <div className="flex items-center space-x-4">
             <h1 className="text-xl font-bold text-white">Website Page Builder</h1>
             <div className="text-sm text-gray-400">
@@ -292,7 +292,7 @@ const WebsitePageBuilder: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex h-screen">
+      <div className="flex h-screen max-w-7xl mx-auto">
         {/* サイドパネル - セクション管理 */}
         <SectionSidebar
           sections={sections}

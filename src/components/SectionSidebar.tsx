@@ -27,8 +27,8 @@ const SectionSidebar: React.FC<SectionSidebarProps> = ({
   onUpdateChildComponent
 }) => {
   return (
-    <div className="w-96 bg-gray-800 border-r border-gray-700 overflow-y-auto">
-      <div className="p-4">
+    <div className="w-96 bg-gray-900 border-r border-gray-700 overflow-y-auto">
+      <div className="p-6">
         <h2 className="text-lg font-semibold text-white mb-4">ページ構造</h2>
         
         {/* セクション一覧 */}

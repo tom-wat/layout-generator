@@ -1,4 +1,78 @@
-import type { Section, DesignSystem } from '../types';
+import type { Section, DesignSystem, ModularSystemConfig, GeneratedSizes, SizeUnit } from '../types';
+
+// モジュラーシステムからサイズスケールを生成
+export const generateModularScale = (
+  baseSize: number, 
+  ratio: number, 
+  steps: number, 
+  direction: 'up' | 'both' = 'both'
+): number[] => {
+  const sizes: number[] = [];
+  
+  if (direction === 'both') {
+    // 下方向のサイズも生成
+    for (let i = -2; i <= steps; i++) {
+      sizes.push(baseSize * Math.pow(ratio, i));
+    }
+  } else {
+    // 上方向のみ
+    for (let i = 0; i <= steps; i++) {
+      sizes.push(baseSize * Math.pow(ratio, i));
+    }
+  }
+  
+  return sizes;
+};
+
+// モジュラーシステム設定からGeneratedSizesを生成
+export const generateSizesFromModularSystem = (config: ModularSystemConfig): GeneratedSizes => {
+  const sizeLabels = {
+    fontSizes: ['xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl'],
+    spacing: ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl']
+  };
+
+  const fontSizes = generateModularScale(config.baseFontSize, config.fontScale.ratio, config.steps - 3, 'both');
+  const spacingSizes = generateModularScale(config.baseSpacing, config.spacingScale.ratio, config.steps - 1, 'up');
+
+  const fontSizeObject: Record<string, string> = {};
+  const spacingObject: Record<string, string> = {};
+
+  // 単位変換用のヘルパー関数
+  const formatValue = (size: number, unit: SizeUnit, baseSize?: number): string => {
+    switch (unit) {
+      case 'px':
+        return `${Math.round(size * 100) / 100}px`;
+      case 'rem':
+        // 16px = 1rem をベースとして計算
+        return `${Math.round((size / 16) * 1000) / 1000}rem`;
+      case 'em':
+        // ベースサイズを参考に計算
+        {const base = baseSize || 16;
+        return `${Math.round((size / base) * 1000) / 1000}em`;}
+      default:
+        return `${Math.round(size * 100) / 100}px`;
+    }
+  };
+
+  // フォントサイズをオブジェクトに変換
+  fontSizes.forEach((size, index) => {
+    if (index < sizeLabels.fontSizes.length) {
+      fontSizeObject[sizeLabels.fontSizes[index]] = formatValue(size, config.fontUnit, config.baseFontSize);
+    }
+  });
+
+  // スペーシングをオブジェクトに変換
+  spacingSizes.forEach((size, index) => {
+    if (index < sizeLabels.spacing.length) {
+      spacingObject[sizeLabels.spacing[index]] = formatValue(size, config.spacingUnit, config.baseSpacing);
+    }
+  });
+
+  return {
+    fontSizes: fontSizeObject,
+    spacing: spacingObject
+  };
+};
 
 // JSON生成
 export const generateJSON = (sections: Section[], designSystem: DesignSystem) => {
@@ -35,39 +109,42 @@ export const generateJSON = (sections: Section[], designSystem: DesignSystem) =>
   };
 };
 
-// CSS生成
+// CSS生成（モジュラーシステム対応）
 export const generateCSS = (designSystem: DesignSystem) => {
-  const { colors, spacing, typography } = designSystem;
+  const { colors, typography, breakpoints } = designSystem;
+  
+  // 生成されたサイズを使用（利用可能な場合）
+  let spacing = designSystem.spacing;
+  let fontSizes = typography.fontSizes;
+  
+  if (designSystem.modularSystem && designSystem.generatedSizes) {
+    spacing = designSystem.generatedSizes.spacing;
+    fontSizes = designSystem.generatedSizes.fontSizes;
+  }
   
   return `:root {
   /* Colors */
   --color-primary: ${colors.primary};
   --color-secondary: ${colors.secondary};
   --color-accent: ${colors.accent};
-  --color-neutral-50: ${colors.neutral[50]};
-  --color-neutral-100: ${colors.neutral[100]};
-  --color-neutral-500: ${colors.neutral[500]};
-  --color-neutral-900: ${colors.neutral[900]};
+  --color-neutral-50: ${colors.neutral[50] || '#F9FAFB'};
+  --color-neutral-100: ${colors.neutral[100] || '#F3F4F6'};
+  --color-neutral-500: ${colors.neutral[500] || '#6B7280'};
+  --color-neutral-900: ${colors.neutral[900] || '#111827'};
   
-  /* Spacing */
-  --space-xs: ${spacing.xs};
-  --space-sm: ${spacing.sm};
-  --space-md: ${spacing.md};
-  --space-lg: ${spacing.lg};
-  --space-xl: ${spacing.xl};
-  --space-2xl: ${spacing['2xl']};
+  /* Spacing Scale */
+${Object.entries(spacing).map(([key, value]) => `  --space-${key}: ${value};`).join('\n')}
   
-  /* Typography */
-  --font-sans: ${typography.fontFamilies.sans};
-  --font-serif: ${typography.fontFamilies.serif};
-  --text-sm: ${typography.fontSizes.sm};
-  --text-base: ${typography.fontSizes.base};
-  --text-lg: ${typography.fontSizes.lg};
-  --text-xl: ${typography.fontSizes.xl};
-  --text-2xl: ${typography.fontSizes['2xl']};
-  --text-3xl: ${typography.fontSizes['3xl']};
+  /* Typography Scale */
+  --font-sans: ${typography.fontFamilies.sans || 'Inter, system-ui, sans-serif'};
+  --font-serif: ${typography.fontFamilies.serif || 'Playfair Display, serif'};
+${Object.entries(fontSizes).map(([key, value]) => `  --text-${key}: ${value};`).join('\n')}
+  
+  /* Breakpoints */
+${Object.entries(breakpoints).map(([key, value]) => `  --breakpoint-${key}: ${value};`).join('\n')}
 }
 
+/* Reset & Base Styles */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -78,14 +155,16 @@ body {
   font-family: var(--font-sans);
   line-height: 1.6;
   color: var(--color-neutral-900);
+  font-size: var(--text-base);
 }
 
+/* Layout Primitives */
 .layout-container {
   width: 100%;
   margin-left: auto;
   margin-right: auto;
-  padding-left: var(--container-padding-x, 1rem);
-  padding-right: var(--container-padding-x, 1rem);
+  padding-left: var(--container-padding-x, var(--space-md));
+  padding-right: var(--container-padding-x, var(--space-md));
 }
 
 .layout-stack {
@@ -94,22 +173,120 @@ body {
 }
 
 .layout-stack > * + * {
-  margin-top: var(--stack-space, 1rem);
+  margin-top: var(--stack-space, var(--space-md));
 }
 
 .layout-grid {
   display: grid;
-  gap: var(--grid-gap, 1rem);
+  gap: var(--grid-gap, var(--space-md));
   grid-template-columns: repeat(auto-fit, minmax(var(--grid-min-width, 250px), 1fr));
 }
 
 .layout-cluster {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--cluster-space, 1rem);
+  gap: var(--cluster-space, var(--space-md));
   justify-content: var(--cluster-justify, flex-start);
   align-items: var(--cluster-align, flex-start);
-}`;
+}
+
+.layout-sidebar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sidebar-space, var(--space-md));
+}
+
+.layout-sidebar > :first-child {
+  flex-basis: var(--sidebar-width, 20rem);
+  flex-grow: 1;
+}
+
+.layout-sidebar > :last-child {
+  flex-basis: 0;
+  flex-grow: 999;
+  min-width: var(--sidebar-content-min-width, 50%);
+}
+
+.layout-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--switcher-space, var(--space-md));
+}
+
+.layout-switcher > * {
+  flex-grow: 1;
+  flex-basis: calc((var(--switcher-threshold, 30rem) - 100%) * 999);
+}
+
+.layout-center {
+  box-sizing: content-box;
+  max-width: var(--center-max-width, 60ch);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--center-gutters, var(--space-md));
+  padding-right: var(--center-gutters, var(--space-md));
+}
+
+.layout-cover {
+  display: flex;
+  flex-direction: column;
+  min-height: var(--cover-min-height, 100vh);
+  padding: var(--cover-space, var(--space-md));
+}
+
+.layout-cover > * {
+  margin-top: var(--cover-space, var(--space-md));
+  margin-bottom: var(--cover-space, var(--space-md));
+}
+
+.layout-cover > :first-child:not(.cover-centered) {
+  margin-top: 0;
+}
+
+.layout-cover > :last-child:not(.cover-centered) {
+  margin-bottom: 0;
+}
+
+.layout-cover > .cover-centered {
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+/* Responsive Typography */
+@media (min-width: var(--breakpoint-tablet)) {
+  .responsive-text {
+    font-size: var(--text-lg);
+  }
+}
+
+@media (min-width: var(--breakpoint-desktop)) {
+  .responsive-text {
+    font-size: var(--text-xl);
+  }
+}
+
+/* Utility Classes */
+.text-xs { font-size: var(--text-xs); }
+.text-sm { font-size: var(--text-sm); }
+.text-base { font-size: var(--text-base); }
+.text-lg { font-size: var(--text-lg); }
+.text-xl { font-size: var(--text-xl); }
+.text-2xl { font-size: var(--text-2xl); }
+.text-3xl { font-size: var(--text-3xl); }
+.text-4xl { font-size: var(--text-4xl); }
+.text-5xl { font-size: var(--text-5xl); }
+.text-6xl { font-size: var(--text-6xl); }
+
+.space-xs { --space: var(--space-xs); }
+.space-sm { --space: var(--space-sm); }
+.space-md { --space: var(--space-md); }
+.space-lg { --space: var(--space-lg); }
+.space-xl { --space: var(--space-xl); }
+.space-2xl { --space: var(--space-2xl); }
+.space-3xl { --space: var(--space-3xl); }
+.space-4xl { --space: var(--space-4xl); }
+.space-5xl { --space: var(--space-5xl); }
+.space-6xl { --space: var(--space-6xl); }`;
 };
 
 // ダウンロード機能

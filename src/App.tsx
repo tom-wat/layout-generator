@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { 
   Layers, Package, Target, Grid as GridIcon, PanelLeft, ToggleLeft, 
   RectangleVertical, Grid3X3, Layout, Network, Frame, Film, Eye, 
-  Sparkles, Container, Globe, Settings
+  Sparkles, Container, Globe, Settings, Ruler
 } from 'lucide-react';
 
 import FileIcon from './components/FileIcon';
@@ -24,21 +24,25 @@ import ContainerLayout from './components/Container';
 
 // 新しいページビルダーコンポーネントをインポート
 import WebsitePageBuilder from './components/WebsitePageBuilder';
+import ModularSystemSettings from './components/ModularSystemSettings';
+import DesignSystemProvider from './components/DesignSystemProvider';
 
 // アプリケーションモード定義
 const APP_MODES = {
   PAGE_BUILDER: 'page-builder',
-  COMPONENT_EDITOR: 'component-editor'
+  COMPONENT_EDITOR: 'component-editor',
+  DESIGN_SYSTEM: 'design-system'
 } as const;
 
 type AppMode = typeof APP_MODES[keyof typeof APP_MODES];
 
 function App() {
-  const [appMode, setAppMode] = useState<AppMode>(APP_MODES.PAGE_BUILDER);
+  const [appMode, setAppMode] = useState<AppMode>(APP_MODES.COMPONENT_EDITOR);
   const [activeGenerator, setActiveGenerator] = useState('stack');
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <DesignSystemProvider>
+      <div className="min-h-screen bg-gray-900">
       {/* Updated Navigation Header */}
       <div className="bg-gray-800 border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-6 py-4">
@@ -76,6 +80,17 @@ function App() {
               >
                 <Settings className="w-4 h-4 mr-2" />
                 コンポーネント設定
+              </button>
+              <button
+                onClick={() => setAppMode(APP_MODES.DESIGN_SYSTEM)}
+                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  appMode === APP_MODES.DESIGN_SYSTEM
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-600'
+                }`}
+              >
+                <Ruler className="w-4 h-4 mr-2" />
+                デザインシステム
               </button>
             </div>
           </div>
@@ -275,6 +290,8 @@ function App() {
       <div className="pt-0">
         {appMode === APP_MODES.PAGE_BUILDER ? (
           <WebsitePageBuilder />
+        ) : appMode === APP_MODES.DESIGN_SYSTEM ? (
+          <ModularSystemSettings />
         ) : (
           <>
             {activeGenerator === 'stack' && <Stack />}
@@ -295,7 +312,8 @@ function App() {
           </>
         )}
       </div>
-    </div>
+      </div>
+    </DesignSystemProvider>
   );
 }
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Layers, Package, Target, Grid as GridIcon, PanelLeft, ToggleLeft, RectangleVertical, Grid3X3, Layout, Network, Frame, Film } from 'lucide-react';
+import { Layers, Package, Target, Grid as GridIcon, PanelLeft, ToggleLeft, RectangleVertical, Grid3X3, Layout, Network, Frame, Film, Eye } from 'lucide-react';
 import FileIcon from './components/FileIcon';
 import Stack from './components/Stack';
 import Box from './components/Box';
@@ -13,6 +13,7 @@ import GridAreaLayout from './components/GridArea';
 import SubgridLayout from './components/Subgrid';
 import FrameLayout from './components/Frame';
 import ReelLayout from './components/Reel';
+import ImposterLayout from './components/Imposter';
 
 function App() {
   const [activeGenerator, setActiveGenerator] = useState('stack');
@@ -174,6 +175,18 @@ function App() {
                 <Film className="w-4 h-4 mr-2" />
                 Reel
               </button>
+
+              <button
+                onClick={() => setActiveGenerator('imposter')}
+                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors flex-shrink-0 ${
+                  activeGenerator === 'imposter'
+                    ? 'bg-violet-600 text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                Imposter
+              </button>
             </nav>
           </div>
         </div>
@@ -193,6 +206,7 @@ function App() {
         {activeGenerator === 'subgrid' && <SubgridLayout />}
         {activeGenerator === 'frame' && <FrameLayout />}
         {activeGenerator === 'reel' && <ReelLayout />}
+        {activeGenerator === 'imposter' && <ImposterLayout />}
       </div>
     </div>
   );

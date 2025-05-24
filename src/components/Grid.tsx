@@ -41,7 +41,7 @@ const GridLayoutGenerator = () => {
     
     const autoFitFill = autoFit ? 'auto-fit' : 'auto-fill';
     
-    let css = `:root {
+    const css = `:root {
   --grid-min-width: ${minWidth};
   --grid-gap: ${gap};
   --grid-justify-items: ${justifyItems};

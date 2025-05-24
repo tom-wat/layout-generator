@@ -206,7 +206,11 @@ const SubgridLayoutGenerator = () => {
   };
 
   // Update subgrid configuration
-  const updateSubgridConfig = (itemId: number, field: keyof NonNullable<GridItem['subgridConfig']>, value: any) => {
+  const updateSubgridConfig = (
+    itemId: number, 
+    field: keyof NonNullable<GridItem['subgridConfig']>, 
+    value: boolean | number | SubgridItem[]
+  ) => {
     setGridItems(gridItems.map(item => {
       if (item.id === itemId && item.subgridConfig) {
         return {

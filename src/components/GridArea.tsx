@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, Eye, Code, Plus, Trash2, RotateCcw, Grid3X3, AlertCircle } from 'lucide-react';
+import { Download, Eye, Code, RotateCcw, Grid3X3, AlertCircle } from 'lucide-react';
 
 interface GridAreaContent {
   name: string;
@@ -46,7 +46,7 @@ const GridAreaLayoutGenerator = () => {
       
       setParseError('');
       return Array.from(areaNames).sort();
-    } catch (error) {
+    } catch {
       setParseError('Grid template areas の解析に失敗しました');
       return [];
     }
@@ -57,23 +57,25 @@ const GridAreaLayoutGenerator = () => {
     const parsedAreas = parseGridAreas(gridAreaConfig.gridTemplateAreas);
     
     // Add new areas that don't exist in current contents
-    const newContents = [...areaContents];
-    parsedAreas.forEach(areaName => {
-      if (!newContents.find(content => content.name === areaName)) {
-        newContents.push({
-          name: areaName,
-          content: `${areaName.charAt(0).toUpperCase() + areaName.slice(1)} Content`,
-          tag: getDefaultTag(areaName)
-        });
-      }
+    setAreaContents(prevContents => {
+      const newContents = [...prevContents];
+      parsedAreas.forEach(areaName => {
+        if (!newContents.find(content => content.name === areaName)) {
+          newContents.push({
+            name: areaName,
+            content: `${areaName.charAt(0).toUpperCase() + areaName.slice(1)} Content`,
+            tag: getDefaultTag(areaName)
+          });
+        }
+      });
+      
+      // Remove areas that no longer exist in template
+      const filteredContents = newContents.filter(content => 
+        parsedAreas.includes(content.name)
+      );
+      
+      return filteredContents;
     });
-    
-    // Remove areas that no longer exist in template
-    const filteredContents = newContents.filter(content => 
-      parsedAreas.includes(content.name)
-    );
-    
-    setAreaContents(filteredContents);
   }, [gridAreaConfig.gridTemplateAreas]);
   
   // Get default HTML tag based on area name

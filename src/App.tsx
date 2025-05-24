@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Layers, Package } from 'lucide-react';
+import { Layers, Package, Target, Grid } from 'lucide-react';
 import FileIcon from './components/FileIcon';
 import Stack from './components/Stack';
 import Box from './components/Box';
+import Center from './components/Center';
+import Cluster from './components/Cluster';
 
 function App() {
   const [activeGenerator, setActiveGenerator] = useState('stack');
@@ -30,7 +32,7 @@ function App() {
                 }`}
               >
                 <Layers className="w-4 h-4 mr-2" />
-                Stack Generator
+                Stack
               </button>
               
               <button
@@ -42,7 +44,31 @@ function App() {
                 }`}
               >
                 <Package className="w-4 h-4 mr-2" />
-                Box Generator
+                Box
+              </button>
+
+              <button
+                onClick={() => setActiveGenerator('center')}
+                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeGenerator === 'center'
+                    ? 'bg-orange-600 text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                <Target className="w-4 h-4 mr-2" />
+                Center
+              </button>
+
+              <button
+                onClick={() => setActiveGenerator('cluster')}
+                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeGenerator === 'cluster'
+                    ? 'bg-cyan-600 text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                <Grid className="w-4 h-4 mr-2" />
+                Cluster
               </button>
             </nav>
           </div>
@@ -53,6 +79,8 @@ function App() {
       <div className="pt-0">
         {activeGenerator === 'stack' && <Stack />}
         {activeGenerator === 'box' && <Box />}
+        {activeGenerator === 'center' && <Center />}
+        {activeGenerator === 'cluster' && <Cluster />}
       </div>
     </div>
   );

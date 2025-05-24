@@ -538,8 +538,8 @@ const StackLayoutGenerator = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">Nested Stack Layout Generator</h2>
-          <p className="text-gray-300">入れ子構造対応の Stack コンポーネント生成ツール</p>
+          <h2 className="text-2xl font-bold text-white mb-2">Stack Layout Generator</h2>
+          <p className="text-gray-300">Every Layout Stack コンポーネント生成ツール</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

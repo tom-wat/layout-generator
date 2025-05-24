@@ -1,0 +1,18 @@
+{
+  "name": "Layout Component Generator",
+  "short_name": "Layout Gen",
+  "description": "レイアウトコンポーネント生成ツール",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#1f2937",
+  "background_color": "#111827",
+  "orientation": "portrait-primary"
+}

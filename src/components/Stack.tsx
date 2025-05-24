@@ -1,15 +1,60 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Download, Plus, Trash2, Eye, Code, ChevronRight, ChevronDown, Indent } from 'lucide-react';
 
+// Type definitions
+interface StackConfig {
+  space: string;
+  recursive: boolean;
+}
+
+interface StackElement {
+  id: number;
+  content: string;
+  tag: string;
+  level: number;
+  isStack: boolean;
+  stackConfig: StackConfig;
+  children: StackElement[];
+  collapsed: boolean;
+}
+
+interface RootStackConfig {
+  space: string;
+  recursive: boolean;
+  splitAfter: number | null;
+  className: string;
+}
+
+// JSON output types
+interface JSONElement {
+  id: number;
+  tag: string;
+  content: string;
+  level: number;
+  component?: string;
+  props?: Record<string, unknown>;
+  children?: JSONElement[];
+}
+
+interface JSONOutput {
+  component: string;
+  props: Record<string, unknown>;
+  children: JSONElement[];
+}
+
+// Union types for dynamic values
+type ElementFieldValue = string | number | boolean;
+type StackConfigValue = string | boolean;
+
 const StackLayoutGenerator = () => {
-  const [stackConfig, setStackConfig] = useState({
+  const [stackConfig, setStackConfig] = useState<RootStackConfig>({
     space: '1rem',
     recursive: false,
     splitAfter: null,
     className: 'stack'
   });
   
-  const [elements, setElements] = useState([
+  const [elements, setElements] = useState<StackElement[]>([
     { 
       id: 1, 
       content: 'First item', 
@@ -42,10 +87,10 @@ const StackLayoutGenerator = () => {
     }
   ]);
   
-  const [activeTab, setActiveTab] = useState('visual');
+  const [activeTab, setActiveTab] = useState<string>('visual');
   
   // Generate CSS for nested stacks
-  const generateCSS = () => {
+  const generateCSS = (): string => {
     const { space, recursive, splitAfter, className } = stackConfig;
     
     let css = `.${className} {
@@ -83,9 +128,9 @@ const StackLayoutGenerator = () => {
     }
 
     // Generate CSS for nested stacks
-    const generateNestedStackCSS = (elements, level = 0) => {
+    const generateNestedStackCSS = (elements: StackElement[], level: number = 0): string => {
       let nestedCSS = '';
-      elements.forEach(element => {
+      elements.forEach((element: StackElement) => {
         if (element.isStack) {
           const nestedClassName = `${className}-nested-${element.id}`;
           nestedCSS += `
@@ -132,10 +177,10 @@ const StackLayoutGenerator = () => {
   };
 
   // Generate JSON with nested structure
-  const generateJSON = () => {
-    const convertElementsToJSON = (elements) => {
-      return elements.map(element => {
-        const baseElement = {
+  const generateJSON = (): JSONOutput => {
+    const convertElementsToJSON = (elements: StackElement[]): JSONElement[] => {
+      return elements.map((element: StackElement) => {
+        const baseElement: JSONElement = {
           id: element.id,
           tag: element.tag,
           content: element.content,
@@ -175,9 +220,9 @@ const StackLayoutGenerator = () => {
   };
 
   // Add element
-  const addElement = (targetId = null, level = 0, addAsChild = false) => {
+  const addElement = (targetId: number | null = null, level: number = 0, addAsChild: boolean = false): void => {
     const newId = Math.max(...getAllIds(elements)) + 1;
-    const newElement = {
+    const newElement: StackElement = {
       id: newId,
       content: `Item ${newId}`,
       tag: 'div',
@@ -193,13 +238,13 @@ const StackLayoutGenerator = () => {
       setElements([...elements, newElement]);
     } else if (addAsChild) {
       // Add as child of target element
-      setElements(updateElementsRecursively(elements, targetId, (element) => ({
+      setElements(updateElementsRecursively(elements, targetId, (element: StackElement) => ({
         ...element,
         children: [...element.children, newElement]
       })));
     } else {
       // Add as sibling of target element
-      const addSibling = (elements, parentPath = []) => {
+      const addSibling = (elements: StackElement[], parentPath: number[] = []): StackElement[] => {
         for (let i = 0; i < elements.length; i++) {
           if (elements[i].id === targetId) {
             // Found the target, add sibling
@@ -226,14 +271,14 @@ const StackLayoutGenerator = () => {
   };
 
   // Add child element specifically
-  const addChildElement = (parentId, level) => {
+  const addChildElement = (parentId: number, level: number): void => {
     addElement(parentId, level, true);
   };
 
   // Get all IDs recursively
-  const getAllIds = (elements) => {
-    let ids = [];
-    elements.forEach(element => {
+  const getAllIds = (elements: StackElement[]): number[] => {
+    let ids: number[] = [];
+    elements.forEach((element: StackElement) => {
       ids.push(element.id);
       if (element.children && element.children.length > 0) {
         ids = ids.concat(getAllIds(element.children));
@@ -243,8 +288,12 @@ const StackLayoutGenerator = () => {
   };
 
   // Update elements recursively
-  const updateElementsRecursively = (elements, targetId, updateFn) => {
-    return elements.map(element => {
+  const updateElementsRecursively = (
+    elements: StackElement[], 
+    targetId: number, 
+    updateFn: (element: StackElement) => StackElement
+  ): StackElement[] => {
+    return elements.map((element: StackElement) => {
       if (element.id === targetId) {
         return updateFn(element);
       }
@@ -259,9 +308,9 @@ const StackLayoutGenerator = () => {
   };
 
   // Remove element
-  const removeElement = (id) => {
-    const removeFromElements = (elements) => {
-      return elements.filter(element => element.id !== id).map(element => ({
+  const removeElement = (id: number): void => {
+    const removeFromElements = (elements: StackElement[]): StackElement[] => {
+      return elements.filter((element: StackElement) => element.id !== id).map((element: StackElement) => ({
         ...element,
         children: element.children ? removeFromElements(element.children) : []
       }));
@@ -270,16 +319,16 @@ const StackLayoutGenerator = () => {
   };
 
   // Update element
-  const updateElement = (id, field, value) => {
-    setElements(updateElementsRecursively(elements, id, (element) => ({
+  const updateElement = (id: number, field: string, value: ElementFieldValue): void => {
+    setElements(updateElementsRecursively(elements, id, (element: StackElement) => ({
       ...element,
       [field]: value
     })));
   };
 
   // Update stack config for element
-  const updateElementStackConfig = (id, field, value) => {
-    setElements(updateElementsRecursively(elements, id, (element) => ({
+  const updateElementStackConfig = (id: number, field: string, value: StackConfigValue): void => {
+    setElements(updateElementsRecursively(elements, id, (element: StackElement) => ({
       ...element,
       stackConfig: {
         ...element.stackConfig,
@@ -289,16 +338,16 @@ const StackLayoutGenerator = () => {
   };
 
   // Toggle element collapse
-  const toggleCollapse = (id) => {
-    setElements(updateElementsRecursively(elements, id, (element) => ({
+  const toggleCollapse = (id: number): void => {
+    setElements(updateElementsRecursively(elements, id, (element: StackElement) => ({
       ...element,
       collapsed: !element.collapsed
     })));
   };
 
   // Convert element to stack
-  const convertToStack = (id) => {
-    setElements(updateElementsRecursively(elements, id, (element) => ({
+  const convertToStack = (id: number): void => {
+    setElements(updateElementsRecursively(elements, id, (element: StackElement) => ({
       ...element,
       isStack: !element.isStack,
       content: element.isStack ? element.content : 'Stack Container'
@@ -306,8 +355,8 @@ const StackLayoutGenerator = () => {
   };
 
   // Render elements tree
-  const renderElementsTree = (elements, level = 0) => {
-    return elements.map((element) => (
+  const renderElementsTree = (elements: StackElement[], level: number = 0): React.ReactElement[] => {
+    return elements.map((element: StackElement) => (
       <div key={element.id} className="mb-2">
         <div className={`flex items-center space-x-2 p-3 rounded-md ${
           element.isStack ? 'bg-blue-900/20 border border-blue-700' : 'bg-gray-700'
@@ -431,35 +480,38 @@ const StackLayoutGenerator = () => {
   };
 
   // Render preview recursively
-  const renderPreview = (elements = stackConfig.className) => {
-    return elements.map((element) => {
-      const Tag = element.tag;
+  const renderPreview = (elements: StackElement[]): React.ReactElement[] => {
+    return elements.map((element: StackElement) => {
+      const tagName = element.tag as keyof React.JSX.IntrinsicElements;
       
       if (element.isStack) {
         const nestedClassName = `${stackConfig.className}-nested-${element.id}`;
         return (
           <div key={element.id} className={nestedClassName}>
             <div className="text-xs text-gray-400 mb-2">Stack: {element.content}</div>
-            {element.children.length > 0 && renderPreview(element.children, nestedClassName)}
+            {element.children.length > 0 && renderPreview(element.children)}
           </div>
         );
       } else {
-        return (
-          <Tag key={element.id} className="p-3 bg-gray-700 border border-gray-600 rounded text-white">
-            {element.content}
-            {element.children.length > 0 && (
-              <div className="mt-2 pl-4 border-l-2 border-gray-600">
-                {renderPreview(element.children)}
-              </div>
-            )}
-          </Tag>
+        return React.createElement(
+          tagName,
+          {
+            key: element.id,
+            className: "p-3 bg-gray-700 border border-gray-600 rounded text-white"
+          },
+          element.content,
+          element.children.length > 0 && (
+            <div className="mt-2 pl-4 border-l-2 border-gray-600">
+              {renderPreview(element.children)}
+            </div>
+          )
         );
       }
     });
   };
 
   // Download functions
-  const downloadJSON = () => {
+  const downloadJSON = (): void => {
     const json = generateJSON();
     const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -470,7 +522,7 @@ const StackLayoutGenerator = () => {
     URL.revokeObjectURL(url);
   };
 
-  const downloadCSS = () => {
+  const downloadCSS = (): void => {
     const css = generateCSS();
     const blob = new Blob([css], { type: 'text/css' });
     const url = URL.createObjectURL(blob);

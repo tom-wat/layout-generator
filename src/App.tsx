@@ -1,5 +1,10 @@
 import { useState } from 'react';
-import { Layers, Package, Target, Grid as GridIcon, PanelLeft, ToggleLeft, RectangleVertical, Grid3X3, Layout, Network, Frame, Film, Eye, Sparkles, Container } from 'lucide-react';
+import { 
+  Layers, Package, Target, Grid as GridIcon, PanelLeft, ToggleLeft, 
+  RectangleVertical, Grid3X3, Layout, Network, Frame, Film, Eye, 
+  Sparkles, Container, Globe, Settings
+} from 'lucide-react';
+
 import FileIcon from './components/FileIcon';
 import Stack from './components/Stack';
 import Box from './components/Box';
@@ -17,22 +22,70 @@ import ImposterLayout from './components/Imposter';
 import IconLayout from './components/Icon';
 import ContainerLayout from './components/Container';
 
+// 新しいページビルダーコンポーネントをインポート
+import WebsitePageBuilder from './components/WebsitePageBuilder';
+
+// アプリケーションモード定義
+const APP_MODES = {
+  PAGE_BUILDER: 'page-builder',
+  COMPONENT_EDITOR: 'component-editor'
+} as const;
+
+type AppMode = typeof APP_MODES[keyof typeof APP_MODES];
+
 function App() {
+  const [appMode, setAppMode] = useState<AppMode>(APP_MODES.PAGE_BUILDER);
   const [activeGenerator, setActiveGenerator] = useState('stack');
 
   return (
     <div className="min-h-screen bg-gray-900">
-      {/* Navigation Header */}
+      {/* Updated Navigation Header */}
       <div className="bg-gray-800 border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center space-x-8 min-w-0">
+          <div className="flex items-center justify-between">
+            {/* App Title */}
             <div className="flex items-center space-x-2 flex-shrink-0">
               <div className="w-8 h-8 bg-gray-700 rounded flex items-center justify-center">
                 <FileIcon className="w-5 h-5" />
               </div>
-              <h1 className="text-xl font-bold text-white whitespace-nowrap hidden md:block">Layout Component Generator</h1>
+              <h1 className="text-xl font-bold text-white whitespace-nowrap hidden md:block">
+                Layout Component Generator
+              </h1>
             </div>
             
+            {/* Mode Switcher */}
+            <div className="flex items-center space-x-2 bg-gray-700 rounded-lg p-1">
+              <button
+                onClick={() => setAppMode(APP_MODES.PAGE_BUILDER)}
+                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  appMode === APP_MODES.PAGE_BUILDER
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-600'
+                }`}
+              >
+                <Globe className="w-4 h-4 mr-2" />
+                ページビルダー
+              </button>
+              <button
+                onClick={() => setAppMode(APP_MODES.COMPONENT_EDITOR)}
+                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  appMode === APP_MODES.COMPONENT_EDITOR
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-600'
+                }`}
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                コンポーネント設定
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Component Editor Navigation (only show when in component editor mode) */}
+      {appMode === APP_MODES.COMPONENT_EDITOR && (
+        <div className="bg-gray-800 border-b border-gray-700">
+          <div className="max-w-7xl mx-auto px-6 py-2">
             <nav className="flex space-x-4 overflow-x-auto min-w-0 flex-1 custom-scrollbar">
               <button
                 onClick={() => setActiveGenerator('stack')}
@@ -216,25 +269,31 @@ function App() {
             </nav>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Generator Content */}
+      {/* Main Content */}
       <div className="pt-0">
-        {activeGenerator === 'stack' && <Stack />}
-        {activeGenerator === 'box' && <Box />}
-        {activeGenerator === 'center' && <Center />}
-        {activeGenerator === 'cluster' && <Cluster />}
-        {activeGenerator === 'sidebar' && <Sidebar />}
-        {activeGenerator === 'switcher' && <Switcher />}
-        {activeGenerator === 'cover' && <Cover />}
-        {activeGenerator === 'grid' && <GridLayout />}
-        {activeGenerator === 'gridarea' && <GridAreaLayout />}
-        {activeGenerator === 'subgrid' && <SubgridLayout />}
-        {activeGenerator === 'frame' && <FrameLayout />}
-        {activeGenerator === 'reel' && <ReelLayout />}
-        {activeGenerator === 'imposter' && <ImposterLayout />}
-        {activeGenerator === 'icon' && <IconLayout />}
-        {activeGenerator === 'container' && <ContainerLayout />}
+        {appMode === APP_MODES.PAGE_BUILDER ? (
+          <WebsitePageBuilder />
+        ) : (
+          <>
+            {activeGenerator === 'stack' && <Stack />}
+            {activeGenerator === 'box' && <Box />}
+            {activeGenerator === 'center' && <Center />}
+            {activeGenerator === 'cluster' && <Cluster />}
+            {activeGenerator === 'sidebar' && <Sidebar />}
+            {activeGenerator === 'switcher' && <Switcher />}
+            {activeGenerator === 'cover' && <Cover />}
+            {activeGenerator === 'grid' && <GridLayout />}
+            {activeGenerator === 'gridarea' && <GridAreaLayout />}
+            {activeGenerator === 'subgrid' && <SubgridLayout />}
+            {activeGenerator === 'frame' && <FrameLayout />}
+            {activeGenerator === 'reel' && <ReelLayout />}
+            {activeGenerator === 'imposter' && <ImposterLayout />}
+            {activeGenerator === 'icon' && <IconLayout />}
+            {activeGenerator === 'container' && <ContainerLayout />}
+          </>
+        )}
       </div>
     </div>
   );

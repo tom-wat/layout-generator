@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Layers, Package, Target, Grid as GridIcon, PanelLeft, ToggleLeft, RectangleVertical, Grid3X3, Layout } from 'lucide-react';
+import { Layers, Package, Target, Grid as GridIcon, PanelLeft, ToggleLeft, RectangleVertical, Grid3X3, Layout, Network } from 'lucide-react';
 import FileIcon from './components/FileIcon';
 import Stack from './components/Stack';
 import Box from './components/Box';
@@ -10,6 +10,7 @@ import Switcher from './components/Switcher';
 import Cover from './components/Cover';
 import GridLayout from './components/Grid';
 import GridAreaLayout from './components/GridArea';
+import SubgridLayout from './components/Subgrid';
 
 function App() {
   const [activeGenerator, setActiveGenerator] = useState('stack');
@@ -135,6 +136,18 @@ function App() {
                 <Layout className="w-4 h-4 mr-2" />
                 Grid Area
               </button>
+
+              <button
+                onClick={() => setActiveGenerator('subgrid')}
+                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors flex-shrink-0 ${
+                  activeGenerator === 'subgrid'
+                    ? 'bg-emerald-600 text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                <Network className="w-4 h-4 mr-2" />
+                Subgrid
+              </button>
             </nav>
           </div>
         </div>
@@ -151,6 +164,7 @@ function App() {
         {activeGenerator === 'cover' && <Cover />}
         {activeGenerator === 'grid' && <GridLayout />}
         {activeGenerator === 'gridarea' && <GridAreaLayout />}
+        {activeGenerator === 'subgrid' && <SubgridLayout />}
       </div>
     </div>
   );

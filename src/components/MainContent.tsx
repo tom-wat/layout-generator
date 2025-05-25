@@ -1,7 +1,12 @@
 import React from 'react';
-import { Layout, Download } from 'lucide-react';
+import { Layout, Download, FileText, Code2 } from 'lucide-react';
 import type { MainContentProps, Section, PreviewMode } from '../types';
-import { generateJSON, generateCSS } from '../utils/generators';
+import { 
+  generatePageStructureJSON, 
+  generatePageStructureCSS,
+  downloadPageStructureJSON,
+  downloadPageStructureCSS 
+} from '../utils/generators';
 
 // セクションプレビュー生成
 const renderSectionPreview = (section: Section, previewMode: PreviewMode) => {
@@ -50,10 +55,17 @@ const MainContent: React.FC<MainContentProps> = ({
   activeTab,
   previewMode,
   sections,
-  designSystem,
   onDownloadJSON,
   onDownloadCSS
 }) => {
+  // ページ構造専用のダウンロード関数
+  const handleDownloadPageJSON = () => {
+    downloadPageStructureJSON(sections);
+  };
+
+  const handleDownloadPageCSS = () => {
+    downloadPageStructureCSS(sections);
+  };
   if (activeTab === 'builder') {
     return (
       <div className="h-full p-6 overflow-y-auto">
@@ -95,44 +107,101 @@ const MainContent: React.FC<MainContentProps> = ({
   }
 
   if (activeTab === 'code') {
-    const jsonData = generateJSON(sections, designSystem);
-    const cssCode = generateCSS(designSystem);
+    const pageStructureJSON = generatePageStructureJSON(sections);
+    const pageStructureCSS = generatePageStructureCSS(sections);
 
     return (
       <div className="h-full p-6 overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-white">生成されたコード</h2>
+          <div>
+            <h2 className="text-xl font-semibold text-white">ページ構造コード</h2>
+            <p className="text-sm text-gray-400 mt-1">
+              ページ構造に特化したJSON・CSSを生成（デザインシステム設定を除外）
+            </p>
+          </div>
           <div className="flex space-x-3">
             <button 
-              onClick={onDownloadJSON}
-              className="flex items-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+              onClick={handleDownloadPageJSON}
+              className="flex items-center px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
             >
-              <Download className="w-4 h-4 mr-2" />
-              JSON
+              <FileText className="w-4 h-4 mr-2" />
+              ページ構造 JSON
             </button>
             <button 
-              onClick={onDownloadCSS}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+              onClick={handleDownloadPageCSS}
+              className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
             >
-              <Download className="w-4 h-4 mr-2" />
-              CSS
+              <Code2 className="w-4 h-4 mr-2" />
+              ページ構造 CSS
             </button>
           </div>
         </div>
         
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-medium text-white mb-3">JSON構造</h3>
-            <pre className="bg-gray-800 p-4 rounded-lg text-green-400 text-sm overflow-x-auto max-h-96 overflow-y-auto border border-gray-700">
-              {JSON.stringify(jsonData, null, 2)}
-            </pre>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+              <h3 className="text-lg font-medium text-white mb-3 flex items-center">
+                <FileText className="w-5 h-5 mr-2 text-purple-400" />
+                ページ構造 JSON
+              </h3>
+              <div className="mb-3">
+                <div className="text-xs text-gray-400 space-y-1">
+                  <div>📄 セクション数: {sections.length}</div>
+                  <div>🏗️ 使用コンポーネント: {[...new Set(sections.map(s => s.component))].join(', ')}</div>
+                  <div>🏷️ セマンティック要素: {[...new Set(sections.map(s => s.semanticElement))].join(', ')}</div>
+                </div>
+              </div>
+              <pre className="bg-gray-900 p-4 rounded text-green-400 text-xs overflow-x-auto max-h-80 overflow-y-auto border border-gray-600">
+                {JSON.stringify(pageStructureJSON, null, 2)}
+              </pre>
+            </div>
           </div>
           
-          <div>
-            <h3 className="text-lg font-medium text-white mb-3">CSS</h3>
-            <pre className="bg-gray-800 p-4 rounded-lg text-blue-400 text-sm overflow-x-auto max-h-96 overflow-y-auto border border-gray-700">
-              {cssCode}
-            </pre>
+          <div className="space-y-4">
+            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+              <h3 className="text-lg font-medium text-white mb-3 flex items-center">
+                <Code2 className="w-5 h-5 mr-2 text-indigo-400" />
+                ページ構造 CSS
+              </h3>
+              <div className="mb-3">
+                <div className="text-xs text-gray-400 space-y-1">
+                  <div>🎨 使用されているコンポーネントのみ生成</div>
+                  <div>📱 基本的なレスポンシブ対応</div>
+                  <div>⚡ CSS変数を使用した柔軟な設定</div>
+                </div>
+              </div>
+              <pre className="bg-gray-900 p-4 rounded text-blue-400 text-xs overflow-x-auto max-h-80 overflow-y-auto border border-gray-600">
+                {pageStructureCSS}
+              </pre>
+            </div>
+          </div>
+        </div>
+        
+        {/* 既存のフルデザインシステム出力も残す */}
+        <div className="mt-8 pt-6 border-t border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-medium text-white">完全版（デザインシステム含む）</h3>
+              <p className="text-sm text-gray-400">
+                デザインシステム設定を含む完全版のJSON・CSS
+              </p>
+            </div>
+            <div className="flex space-x-3">
+              <button 
+                onClick={onDownloadJSON}
+                className="flex items-center px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm"
+              >
+                <Download className="w-4 h-4 mr-1" />
+                完全版 JSON
+              </button>
+              <button 
+                onClick={onDownloadCSS}
+                className="flex items-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
+              >
+                <Download className="w-4 h-4 mr-1" />
+                完全版 CSS
+              </button>
+            </div>
           </div>
         </div>
       </div>

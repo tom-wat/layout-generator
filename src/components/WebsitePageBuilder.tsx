@@ -34,7 +34,7 @@ import {
   generateJSON, 
   generateCSS, 
   downloadJSON, 
-  downloadCSS 
+  downloadCSS
 } from '../utils/generators';
 
 const WebsitePageBuilder: React.FC = () => {
@@ -220,6 +220,8 @@ const WebsitePageBuilder: React.FC = () => {
     const css = generateCSS(designSystem);
     downloadCSS(css);
   }, [designSystem]);
+
+
 
   return (
     <div className="bg-gray-900 min-h-screen">

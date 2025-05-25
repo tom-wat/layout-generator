@@ -527,3 +527,298 @@ export const downloadCSS = (css: string, filename = 'website-styles.css') => {
   a.click();
   URL.revokeObjectURL(url);
 };
+
+// ===== ページ構造特化型の出力関数 =====
+
+// ページ構造のみのJSON生成（デザインシステム設定を除外）
+export const generatePageStructureJSON = (sections: Section[]) => {
+  return {
+    meta: {
+      title: 'Generated Page Structure',
+      description: 'Page structure generated with layout builder',
+      language: 'ja',
+      generatedAt: new Date().toISOString()
+    },
+    pageStructure: {
+      sections: sections.map(section => ({
+        id: section.id,
+        name: section.name,
+        component: section.component,
+        semanticElement: section.semanticElement,
+        props: section.props,
+        children: section.children.map(child => ({
+          id: child.id,
+          component: child.component,
+          semanticElement: child.semanticElement,
+          props: child.props,
+          content: child.content
+        })),
+        content: section.content || `${section.name}のコンテンツ`,
+        accessibility: {
+          ariaLabel: section.semanticElement === 'header' ? 'サイトヘッダー' : 
+                    section.semanticElement === 'footer' ? 'サイトフッター' : 
+                    section.semanticElement === 'nav' ? 'ナビゲーション' :
+                    section.semanticElement === 'main' ? 'メインコンテンツ' :
+                    section.name,
+          role: section.semanticElement === 'section' ? 'region' : undefined
+        }
+      }))
+    },
+    // ページ全体の構造情報
+    structure: {
+      totalSections: sections.length,
+      hasHeader: sections.some(s => s.semanticElement === 'header'),
+      hasFooter: sections.some(s => s.semanticElement === 'footer'),
+      hasNav: sections.some(s => s.semanticElement === 'nav'),
+      hasMain: sections.some(s => s.semanticElement === 'main'),
+      componentTypes: [...new Set(sections.map(s => s.component))],
+      semanticElements: [...new Set(sections.map(s => s.semanticElement))]
+    }
+  };
+};
+
+// ページ構造のみのCSS生成（レイアウトプリミティブのみ）
+export const generatePageStructureCSS = (sections: Section[]) => {
+  // 使用されているコンポーネントを特定
+  const usedComponents = new Set(sections.map(s => s.component));
+  sections.forEach(section => {
+    section.children.forEach(child => {
+      usedComponents.add(child.component);
+    });
+  });
+
+  // 基本リセットとレイアウトプリミティブ
+  const baseCSS = `/* ===== Page Structure CSS ===== */
+/* Generated on: ${new Date().toISOString()} */
+
+/* Reset & Base Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+}
+
+/* Page Layout Structure */
+.page-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Layout Primitives (Used Components Only) */`;
+
+  // 使用されているコンポーネントのCSSのみを生成
+  const componentCSS: string[] = [];
+
+  if (usedComponents.has('CONTAINER')) {
+    componentCSS.push(`
+.layout-container {
+  width: 100%;
+  max-width: var(--container-max-width, 1200px);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--container-padding-x, 1rem);
+  padding-right: var(--container-padding-x, 1rem);
+}`);
+  }
+
+  if (usedComponents.has('STACK')) {
+    componentCSS.push(`
+.layout-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.layout-stack > * + * {
+  margin-top: var(--stack-space, 1rem);
+}`);
+  }
+
+  if (usedComponents.has('GRID')) {
+    componentCSS.push(`
+.layout-grid {
+  display: grid;
+  gap: var(--grid-gap, 1rem);
+  grid-template-columns: repeat(auto-fit, minmax(var(--grid-min-width, 250px), 1fr));
+}`);
+  }
+
+  if (usedComponents.has('CLUSTER')) {
+    componentCSS.push(`
+.layout-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cluster-space, 1rem);
+  justify-content: var(--cluster-justify, flex-start);
+  align-items: var(--cluster-align, flex-start);
+}`);
+  }
+
+  if (usedComponents.has('SIDEBAR')) {
+    componentCSS.push(`
+.layout-sidebar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sidebar-space, 1rem);
+}
+
+.layout-sidebar > :first-child {
+  flex-basis: var(--sidebar-width, 20rem);
+  flex-grow: 1;
+}
+
+.layout-sidebar > :last-child {
+  flex-basis: 0;
+  flex-grow: 999;
+  min-width: var(--sidebar-content-min-width, 50%);
+}`);
+  }
+
+  if (usedComponents.has('SWITCHER')) {
+    componentCSS.push(`
+.layout-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--switcher-space, 1rem);
+}
+
+.layout-switcher > * {
+  flex-grow: 1;
+  flex-basis: calc((var(--switcher-threshold, 30rem) - 100%) * 999);
+}`);
+  }
+
+  if (usedComponents.has('CENTER')) {
+    componentCSS.push(`
+.layout-center {
+  box-sizing: content-box;
+  max-width: var(--center-max-width, 60ch);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--center-gutters, 1rem);
+  padding-right: var(--center-gutters, 1rem);
+}`);
+  }
+
+  if (usedComponents.has('COVER')) {
+    componentCSS.push(`
+.layout-cover {
+  display: flex;
+  flex-direction: column;
+  min-height: var(--cover-min-height, 100vh);
+  padding: var(--cover-space, 1rem);
+}
+
+.layout-cover > * {
+  margin-top: var(--cover-space, 1rem);
+  margin-bottom: var(--cover-space, 1rem);
+}
+
+.layout-cover > :first-child:not(.cover-centered) {
+  margin-top: 0;
+}
+
+.layout-cover > :last-child:not(.cover-centered) {
+  margin-bottom: 0;
+}
+
+.layout-cover > .cover-centered {
+  margin-top: auto;
+  margin-bottom: auto;
+}`);
+  }
+
+  if (usedComponents.has('BOX')) {
+    componentCSS.push(`
+.layout-box {
+  padding: var(--box-padding, 1rem);
+  border: var(--box-border, none);
+  border-radius: var(--box-border-radius, 0);
+  background: var(--box-background, transparent);
+}`);
+  }
+
+  // セクション固有のCSS生成
+  const sectionCSS = sections.map(section => {
+    const cssVariables: string[] = [];
+    
+    // プロップスからCSS変数を生成
+    if (section.props) {
+      Object.entries(section.props).forEach(([key, value]) => {
+        if (typeof value === 'string' || typeof value === 'number') {
+          cssVariables.push(`  --${section.component.toLowerCase()}-${key}: ${value};`);
+        } else if (typeof value === 'object' && value !== null) {
+          // レスポンシブ値の処理
+          Object.entries(value as Record<string, unknown>).forEach(([breakpoint, breakpointValue]) => {
+            if (typeof breakpointValue === 'string' || typeof breakpointValue === 'number') {
+              cssVariables.push(`  --${section.component.toLowerCase()}-${key}-${breakpoint}: ${breakpointValue};`);
+            }
+          });
+        }
+      });
+    }
+
+    if (cssVariables.length > 0) {
+      return `
+/* Section: ${section.name} (${section.id}) */
+.section-${section.id} {
+${cssVariables.join('\n')}
+}`;
+    }
+    return '';
+  }).filter(css => css.trim() !== '');
+
+  // 基本的なレスポンシブ設定
+  const responsiveCSS = `
+/* Basic Responsive Utilities */
+@media (max-width: 768px) {
+  .layout-container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .layout-sidebar {
+    flex-direction: column;
+  }
+  
+  .layout-cluster {
+    justify-content: center;
+  }
+}
+
+/* Component State Classes */
+.is-hidden { display: none; }
+.is-visible { display: block; }
+.is-centered { margin-left: auto; margin-right: auto; }`;
+
+  return [baseCSS, ...componentCSS, ...sectionCSS, responsiveCSS].join('\n');
+};
+
+// ページ構造用のダウンロード関数
+export const downloadPageStructureJSON = (sections: Section[], filename = 'page-structure.json') => {
+  const data = generatePageStructureJSON(sections);
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+export const downloadPageStructureCSS = (sections: Section[], filename = 'page-structure.css') => {
+  const css = generatePageStructureCSS(sections);
+  const blob = new Blob([css], { type: 'text/css' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+};

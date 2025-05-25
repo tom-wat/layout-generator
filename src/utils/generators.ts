@@ -10,8 +10,11 @@ export const generateModularScale = (
   const sizes: number[] = [];
   
   if (direction === 'both') {
-    // 下方向のサイズも生成
-    for (let i = -2; i <= steps; i++) {
+    // 下方向と上方向のサイズを生成（より幅広い範囲）
+    const downSteps = Math.ceil(steps / 2) + 3; // 下方向により多くのステップ
+    const upSteps = steps + 3; // 上方向にも十分なステップ
+    
+    for (let i = -downSteps; i <= upSteps; i++) {
       sizes.push(baseSize * Math.pow(ratio, i));
     }
   } else {
@@ -27,12 +30,22 @@ export const generateModularScale = (
 // モジュラーシステム設定からGeneratedSizesを生成
 export const generateSizesFromModularSystem = (config: ModularSystemConfig): GeneratedSizes => {
   const sizeLabels = {
-    fontSizes: ['xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl'],
-    spacing: ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl']
+    fontSizes: [
+      'xxs', 'xs', 'xs-plus', 'sm', 'sm-plus', 'base', 'base-plus', 'lg', 'xl', 
+      '2xl', '3xl', '4xl', '5xl', '6xl'
+    ],
+    spacing: [
+      'xxs', 'xs', 'xs-plus', 'sm', 'sm-plus', 'md', 'md-plus', 'lg', 'xl', 
+      '2xl', '3xl', '4xl', '5xl', '6xl'
+    ]
   };
 
-  const fontSizes = generateModularScale(config.baseFontSize, config.fontScale.ratio, config.steps - 3, 'both');
-  const spacingSizes = generateModularScale(config.baseSpacing, config.spacingScale.ratio, config.steps - 1, 'up');
+  // 十分な数のサイズを生成（ラベル数より多く生成）
+  const fontSteps = Math.max(config.steps, sizeLabels.fontSizes.length + 3);
+  const spacingSteps = Math.max(config.steps, sizeLabels.spacing.length + 3);
+  
+  const fontSizes = generateModularScale(config.baseFontSize, config.fontScale.ratio, fontSteps, 'both');
+  const spacingSizes = generateModularScale(config.baseSpacing, config.spacingScale.ratio, spacingSteps, 'both');
 
   const fontSizeObject: Record<string, string> = {};
   const spacingObject: Record<string, string> = {};
@@ -54,17 +67,43 @@ export const generateSizesFromModularSystem = (config: ModularSystemConfig): Gen
     }
   };
 
-  // フォントサイズをオブジェクトに変換
-  fontSizes.forEach((size, index) => {
-    if (index < sizeLabels.fontSizes.length) {
-      fontSizeObject[sizeLabels.fontSizes[index]] = formatValue(size, config.fontUnit, config.baseFontSize);
+  // フォントサイズをオブジェクトに変換（baseが基準値になるように調整）
+  const baseIndex = sizeLabels.fontSizes.indexOf('base'); // 5
+  // 生成された配列での基準値の位置を找す（基準サイズに最も近い値）
+  let fontBaseArrayIndex = 0;
+  let minDiff = Math.abs(fontSizes[0] - config.baseFontSize);
+  for (let i = 1; i < fontSizes.length; i++) {
+    const diff = Math.abs(fontSizes[i] - config.baseFontSize);
+    if (diff < minDiff) {
+      minDiff = diff;
+      fontBaseArrayIndex = i;
+    }
+  }
+  
+  sizeLabels.fontSizes.forEach((label, index) => {
+    const arrayIndex = fontBaseArrayIndex + (index - baseIndex);
+    if (arrayIndex >= 0 && arrayIndex < fontSizes.length) {
+      fontSizeObject[label] = formatValue(fontSizes[arrayIndex], config.fontUnit, config.baseFontSize);
     }
   });
 
-  // スペーシングをオブジェクトに変換
-  spacingSizes.forEach((size, index) => {
-    if (index < sizeLabels.spacing.length) {
-      spacingObject[sizeLabels.spacing[index]] = formatValue(size, config.spacingUnit, config.baseSpacing);
+  // スペーシングをオブジェクトに変換（mdが基準値になるように調整）
+  const mdIndex = sizeLabels.spacing.indexOf('md'); // 4
+  // 生成された配列での基準値の位置を找す（基準サイズに最も近い値）
+  let spacingBaseArrayIndex = 0;
+  let minSpacingDiff = Math.abs(spacingSizes[0] - config.baseSpacing);
+  for (let i = 1; i < spacingSizes.length; i++) {
+    const diff = Math.abs(spacingSizes[i] - config.baseSpacing);
+    if (diff < minSpacingDiff) {
+      minSpacingDiff = diff;
+      spacingBaseArrayIndex = i;
+    }
+  }
+  
+  sizeLabels.spacing.forEach((label, index) => {
+    const arrayIndex = spacingBaseArrayIndex + (index - mdIndex);
+    if (arrayIndex >= 0 && arrayIndex < spacingSizes.length) {
+      spacingObject[label] = formatValue(spacingSizes[arrayIndex], config.spacingUnit, config.baseSpacing);
     }
   });
 
@@ -132,12 +171,14 @@ export const generateCSS = (designSystem: DesignSystem) => {
   --color-neutral-500: ${colors.neutral[500] || '#6B7280'};
   --color-neutral-900: ${colors.neutral[900] || '#111827'};
   
+  /* Typography */
+  --font-sans: ${typography.fontFamilies.sans || 'Inter, system-ui, sans-serif'};
+  --font-serif: ${typography.fontFamilies.serif || 'Playfair Display, serif'};
+  
   /* Spacing Scale */
 ${Object.entries(spacing).map(([key, value]) => `  --space-${key}: ${value};`).join('\n')}
   
   /* Typography Scale */
-  --font-sans: ${typography.fontFamilies.sans || 'Inter, system-ui, sans-serif'};
-  --font-serif: ${typography.fontFamilies.serif || 'Playfair Display, serif'};
 ${Object.entries(fontSizes).map(([key, value]) => `  --text-${key}: ${value};`).join('\n')}
   
   /* Breakpoints */
@@ -266,9 +307,14 @@ body {
 }
 
 /* Utility Classes */
+/* Typography Utilities */
+.text-xxs { font-size: var(--text-xxs); }
 .text-xs { font-size: var(--text-xs); }
+.text-xs-plus { font-size: var(--text-xs-plus); }
 .text-sm { font-size: var(--text-sm); }
+.text-sm-plus { font-size: var(--text-sm-plus); }
 .text-base { font-size: var(--text-base); }
+.text-base-plus { font-size: var(--text-base-plus); }
 .text-lg { font-size: var(--text-lg); }
 .text-xl { font-size: var(--text-xl); }
 .text-2xl { font-size: var(--text-2xl); }
@@ -277,9 +323,14 @@ body {
 .text-5xl { font-size: var(--text-5xl); }
 .text-6xl { font-size: var(--text-6xl); }
 
+/* Spacing Utilities */
+.space-xxs { --space: var(--space-xxs); }
 .space-xs { --space: var(--space-xs); }
+.space-xs-plus { --space: var(--space-xs-plus); }
 .space-sm { --space: var(--space-sm); }
+.space-sm-plus { --space: var(--space-sm-plus); }
 .space-md { --space: var(--space-md); }
+.space-md-plus { --space: var(--space-md-plus); }
 .space-lg { --space: var(--space-lg); }
 .space-xl { --space: var(--space-xl); }
 .space-2xl { --space: var(--space-2xl); }

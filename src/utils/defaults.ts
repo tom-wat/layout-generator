@@ -92,7 +92,7 @@ export const getDefaultModularSystemConfig = (): ModularSystemConfig => ({
   baseSpacing: 16,
   fontScale: { name: 'Major Third', ratio: 1.250},
   spacingScale: { name: 'Major Third', ratio: 1.250},
-  steps: 10,
+  steps: 12,
   fontUnit: 'rem' as SizeUnit,
   spacingUnit: 'rem' as SizeUnit
 });

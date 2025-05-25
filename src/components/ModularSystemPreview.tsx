@@ -2,21 +2,22 @@ import React from 'react';
 import { useDesignSystem } from './DesignSystemProvider';
 
 const ModularSystemPreview: React.FC = () => {
-  const { designSystem, useModularSystem } = useDesignSystem();
+  const { designSystem } = useDesignSystem();
 
   // モジュラーシステムが有効な場合は生成されたサイズを使用、そうでなければデフォルト
-  const fontSizes = useModularSystem && designSystem.generatedSizes 
-    ? designSystem.generatedSizes.fontSizes 
+  const useModularSystem = !!(designSystem.modularSystem && designSystem.generatedSizes);
+  const fontSizes = useModularSystem
+    ? designSystem.generatedSizes!.fontSizes 
     : designSystem.typography.fontSizes;
   
-  const spacing = useModularSystem && designSystem.generatedSizes 
-    ? designSystem.generatedSizes.spacing 
+  const spacing = useModularSystem
+    ? designSystem.generatedSizes!.spacing 
     : designSystem.spacing;
 
   return (
     <div className="bg-white min-h-screen">
       {/* CSS変数を適用するためのスタイル */}
-      <style jsx>{`
+      <style>{`
         .preview-container {
           ${Object.entries({
             ...Object.fromEntries(Object.entries(fontSizes).map(([key, value]) => [`--text-${key}`, value])),
@@ -27,20 +28,26 @@ const ModularSystemPreview: React.FC = () => {
           }).map(([key, value]) => `${key}: ${value};`).join('\n')}
         }
         
+        .text-xxs { font-size: var(--text-xxs); }
         .text-xs { font-size: var(--text-xs); }
+        .text-xs-plus { font-size: var(--text-xs-plus); }
         .text-sm { font-size: var(--text-sm); }
+        .text-sm-plus { font-size: var(--text-sm-plus); }
         .text-base { font-size: var(--text-base); }
+        .text-base-plus { font-size: var(--text-base-plus); }
         .text-lg { font-size: var(--text-lg); }
         .text-xl { font-size: var(--text-xl); }
         .text-2xl { font-size: var(--text-2xl); }
         .text-3xl { font-size: var(--text-3xl); }
         .text-4xl { font-size: var(--text-4xl); }
         .text-5xl { font-size: var(--text-5xl); }
-        .text-6xl { font-size: var(--text-6xl); }
         
         .space-xs { --space: var(--space-xs); }
+        .space-xs-plus { --space: var(--space-xs-plus); }
         .space-sm { --space: var(--space-sm); }
+        .space-sm-plus { --space: var(--space-sm-plus); }
         .space-md { --space: var(--space-md); }
+        .space-md-plus { --space: var(--space-md-plus); }
         .space-lg { --space: var(--space-lg); }
         .space-xl { --space: var(--space-xl); }
         .space-2xl { --space: var(--space-2xl); }
@@ -123,16 +130,19 @@ const ModularSystemPreview: React.FC = () => {
               </h3>
               
               <div className="layout-stack" style={{ '--stack-space': 'var(--space-sm)' } as React.CSSProperties}>
-                <div className="text-6xl" style={{ fontWeight: 'bold' }}>見出し 1 (6xl)</div>
-                <div className="text-5xl" style={{ fontWeight: 'bold' }}>見出し 2 (5xl)</div>
-                <div className="text-4xl" style={{ fontWeight: 'semibold' }}>見出し 3 (4xl)</div>
-                <div className="text-3xl" style={{ fontWeight: 'semibold' }}>見出し 4 (3xl)</div>
-                <div className="text-2xl" style={{ fontWeight: 'medium' }}>見出し 5 (2xl)</div>
-                <div className="text-xl" style={{ fontWeight: 'medium' }}>見出し 6 (xl)</div>
-                <div className="text-lg">大きな本文 (lg)</div>
+                <div className="text-5xl" style={{ fontWeight: 'bold' }}>見出し 1 (5xl)</div>
+                <div className="text-4xl" style={{ fontWeight: 'bold' }}>見出し 2 (4xl)</div>
+                <div className="text-3xl" style={{ fontWeight: 'semibold' }}>見出し 3 (3xl)</div>
+                <div className="text-2xl" style={{ fontWeight: 'semibold' }}>見出し 4 (2xl)</div>
+                <div className="text-xl" style={{ fontWeight: 'medium' }}>見出し 5 (xl)</div>
+                <div className="text-lg" style={{ fontWeight: 'medium' }}>見出し 6 (lg)</div>
+                <div className="text-base-plus">大きな本文 (base-plus)</div>
                 <div className="text-base">通常の本文 (base)</div>
+                <div className="text-sm-plus">少し小さな本文 (sm-plus)</div>
                 <div className="text-sm">小さな本文 (sm)</div>
+                <div className="text-xs-plus">小さなキャプション (xs-plus)</div>
                 <div className="text-xs">キャプション (xs)</div>
+                <div className="text-xxs">最小サイズ (xxs)</div>
               </div>
             </section>
 

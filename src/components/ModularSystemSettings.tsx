@@ -294,28 +294,22 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
               </div>
             )}
 
-            {/* 共通設定 */}
-            <div className="bg-gray-800 rounded-lg p-6 space-y-4">
-              <h3 className="text-lg font-semibold">共通設定</h3>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  生成ステップ数
-                </label>
-                <input
-                  type="range"
-                  value={config.steps}
-                  onChange={(e) => setConfig(prev => ({ ...prev, steps: Number(e.target.value) }))}
-                  className="w-full"
-                  min="5"
-                  max="15"
-                  step="1"
-                />
-                <div className="flex justify-between text-xs text-gray-400 mt-1">
-                  <span>5</span>
-                  <span className="font-medium text-white">{config.steps}</span>
-                  <span>15</span>
-                </div>
+            {/* 生成されたCSS変数 */}
+            <div className="bg-gray-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold mb-4">生成されたCSS変数</h3>
+              <div className="bg-gray-900 rounded p-4 max-h-64 overflow-auto">
+                <pre className="text-xs">
+                  <code className="text-green-400">
+                    {activeTab === 'typography' 
+                      ? Object.entries(generatedSizes.fontSizes)
+                          .map(([key, value]) => `--text-${key}: ${value};`)
+                          .join('\n')
+                      : Object.entries(generatedSizes.spacing)
+                          .map(([key, value]) => `--space-${key}: ${value};`)
+                          .join('\n')
+                    }
+                  </code>
+                </pre>
               </div>
             </div>
           </div>
@@ -325,59 +319,57 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
           {activeTab === 'typography' ? (
             <div className="bg-gray-800 rounded-lg p-6">
               <h3 className="text-lg font-semibold mb-4">フォントサイズプレビュー</h3>
-              <div className="space-y-3">
-                {Object.entries(generatedSizes.fontSizes).map(([key, size]) => (
-                  <div key={key} className="flex items-center justify-between border-b border-gray-700 pb-2">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-sm text-gray-400 w-8">{key}</span>
-                      <span className="text-xs text-gray-500 w-16">{size}</span>
+              <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                {Object.entries(generatedSizes.fontSizes).map(([key, size]) => {
+                  return (
+                    <div key={key} className="border-b border-gray-700 pb-3 last:border-b-0">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-center space-x-3 flex-shrink-0">
+                          <span className="text-sm text-gray-400 w-12 text-right">{key}</span>
+                          <span className="text-xs text-gray-500 w-20">{size}</span>
+                        </div>
+                        <div className="flex-1 overflow-hidden">
+                          <div 
+                            style={{ fontSize: size, lineHeight: '1.2' }} 
+                            className="text-white text-right break-words max-w-full"
+                          >
+                            Sample
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ fontSize: size }} className="text-white">
-                      Sample Text サンプル
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ) : (
             <div className="bg-gray-800 rounded-lg p-6">
               <h3 className="text-lg font-semibold mb-4">スペーシングプレビュー</h3>
-              <div className="space-y-3">
+              <div className="space-y-4 max-h-[600px] overflow-y-auto">
                 {Object.entries(generatedSizes.spacing).map(([key, size]) => (
-                  <div key={key} className="flex items-center justify-between border-b border-gray-700 pb-2">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-sm text-gray-400 w-8">{key}</span>
-                      <span className="text-xs text-gray-500 w-16">{size}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div 
-                        className="bg-purple-500"
-                        style={{ width: size, height: '12px' }}
-                      />
-                      <span className="text-xs text-gray-400">width</span>
+                  <div key={key} className="border-b border-gray-700 pb-3 last:border-b-0">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center space-x-3 flex-shrink-0">
+                        <span className="text-sm text-gray-400 w-12 text-right">{key}</span>
+                        <span className="text-xs text-gray-500 w-20">{size}</span>
+                      </div>
+                      <div className="flex items-center space-x-2 flex-1 justify-end">
+                        <div 
+                          className="bg-purple-500 flex-shrink-0"
+                          style={{ 
+                            width: size, 
+                            height: '12px',
+                            maxWidth: '350px' // スペーシングの最大幅を拡張
+                          }}
+                        />
+                        <span className="text-xs text-gray-400 flex-shrink-0">width</span>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
           )}
-
-          {/* 生成されたCSS変数 */}
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">生成されたCSS変数</h3>
-            <pre className="bg-gray-900 rounded p-4 text-xs overflow-x-auto">
-              <code className="text-green-400">
-                {activeTab === 'typography' 
-                  ? Object.entries(generatedSizes.fontSizes)
-                      .map(([key, value]) => `--text-${key}: ${value};`)
-                      .join('\n')
-                  : Object.entries(generatedSizes.spacing)
-                      .map(([key, value]) => `--space-${key}: ${value};`)
-                      .join('\n')
-                }
-              </code>
-            </pre>
-          </div>
         </div>
       </div>
     </div>

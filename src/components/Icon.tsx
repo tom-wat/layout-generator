@@ -8,10 +8,13 @@ import {
   X, Plus, Minus, Edit, Trash2, Save,
   Camera, Image, Video, Music, File,
   MapPin, Globe, Wifi, Bluetooth, Battery,
-  Sun, Moon, Cloud, Zap, Flame
+  Sun, Moon, Cloud, Zap, Flame,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 const IconLayoutGenerator = () => {
+  const [showSettings, setShowSettings] = useState<boolean>(true);
+  
   const [iconConfig, setIconConfig] = useState({
     iconName: 'Home',
     size: '24',
@@ -386,12 +389,39 @@ ${animation === 'shake' ? `
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">Icon Component Generator</h2>
-          <p className="text-gray-300">アイコンコンポーネント生成ツール - カスタマイズ可能なアイコンの作成</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-2">Icon Component Generator</h2>
+              <p className="text-gray-300">アイコンコンポーネント生成ツール - カスタマイズ可能なアイコンの作成</p>
+            </div>
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className={`flex items-center px-4 py-2 rounded-md transition-colors ${
+                showSettings 
+                  ? 'bg-gray-700 text-white hover:bg-gray-600' 
+                  : 'bg-indigo-600 text-white hover:bg-indigo-700'
+              }`}
+            >
+              {showSettings ? (
+                <>
+                  <ChevronLeft className="w-4 h-4 mr-2" />
+                  設定を非表示
+                </>
+              ) : (
+                <>
+                  <ChevronRight className="w-4 h-4 mr-2" />
+                  設定を表示
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className={`grid grid-cols-1 gap-8 ${
+          showSettings ? 'lg:grid-cols-2' : 'lg:grid-cols-1'
+        }`}>
           {/* Configuration Panel */}
+          {showSettings && (
           <div className="bg-gray-800 rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-semibold mb-6 text-white">設定</h2>
             
@@ -725,6 +755,7 @@ ${animation === 'shake' ? `
               </button>
             </div>
           </div>
+          )}
 
           {/* Preview Panel */}
           <div className="bg-gray-800 rounded-lg shadow-lg p-6">

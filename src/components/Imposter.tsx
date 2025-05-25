@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Download, Eye, Code, RotateCcw, Layers, X, Info, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Download, Eye, Code, RotateCcw, Layers, X, Info, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ImposterLayoutGenerator = () => {
+  const [showSettings, setShowSettings] = useState<boolean>(true);
+  
   const [imposterConfig, setImposterConfig] = useState({
     position: 'fixed',
     top: '0',
@@ -390,12 +392,39 @@ const ImposterLayoutGenerator = () => {
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">Imposter Layout Generator</h2>
-          <p className="text-gray-300">Every Layout Imposter コンポーネント生成ツール - 絶対位置配置によるオーバーレイレイアウト</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-2">Imposter Layout Generator</h2>
+              <p className="text-gray-300">Every Layout Imposter コンポーネント生成ツール - 絶対位置配置によるオーバーレイレイアウト</p>
+            </div>
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className={`flex items-center px-4 py-2 rounded-md transition-colors ${
+                showSettings 
+                  ? 'bg-gray-700 text-white hover:bg-gray-600' 
+                  : 'bg-indigo-600 text-white hover:bg-indigo-700'
+              }`}
+            >
+              {showSettings ? (
+                <>
+                  <ChevronLeft className="w-4 h-4 mr-2" />
+                  設定を非表示
+                </>
+              ) : (
+                <>
+                  <ChevronRight className="w-4 h-4 mr-2" />
+                  設定を表示
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className={`grid grid-cols-1 gap-8 ${
+          showSettings ? 'lg:grid-cols-2' : 'lg:grid-cols-1'
+        }`}>
           {/* Configuration Panel */}
+          {showSettings && (
           <div className="bg-gray-800 rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-semibold mb-6 text-white">設定</h2>
             
@@ -707,6 +736,7 @@ const ImposterLayoutGenerator = () => {
               </button>
             </div>
           </div>
+          )}
 
           {/* Preview Panel */}
           <div className="bg-gray-800 rounded-lg shadow-lg p-6">

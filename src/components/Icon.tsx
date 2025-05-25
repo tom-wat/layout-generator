@@ -27,7 +27,10 @@ const IconLayoutGenerator = () => {
     border: 'none',
     opacity: '1',
     transform: 'none',
-    filter: 'none'
+    filter: 'none',
+    text: 'アイコンテキスト',
+    iconPosition: 'left',
+    textSpacing: '8'
   });
 
   const [iconEffects, setIconEffects] = useState({
@@ -74,7 +77,9 @@ const IconLayoutGenerator = () => {
       border,
       opacity,
       transform,
-      filter
+      filter,
+      iconPosition,
+      textSpacing
     } = iconConfig;
 
     const {
@@ -100,6 +105,15 @@ const IconLayoutGenerator = () => {
   --icon-shadow: ${shadow};
   --icon-gradient-from: ${gradientFrom};
   --icon-gradient-to: ${gradientTo};
+  --icon-text-spacing: ${textSpacing}px;
+}
+
+.${className}-container {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--icon-text-spacing);
+  flex-direction: ${iconPosition === 'right' ? 'row-reverse' : 'row'};
+  transition: all 0.3s ease;
 }
 
 .${className} {
@@ -119,6 +133,14 @@ const IconLayoutGenerator = () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+}
+
+.${className}-text {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.4;
+  white-space: nowrap;
 }
 
 ${gradient ? `
@@ -133,9 +155,13 @@ ${gradient ? `
 ` : ''}
 
 ${hover ? `
-.${className}:hover {
+.${className}-container:hover .${className} {
   transform: scale(1.1);
   filter: brightness(1.2);
+}
+
+.${className}-container:hover .${className}-text {
+  color: #1f2937;
 }
 ` : ''}
 
@@ -210,7 +236,10 @@ ${animation === 'shake' ? `
         border: iconConfig.border,
         opacity: iconConfig.opacity,
         transform: iconConfig.transform,
-        filter: iconConfig.filter
+        filter: iconConfig.filter,
+        text: iconConfig.text,
+        iconPosition: iconConfig.iconPosition,
+        textSpacing: iconConfig.textSpacing
       },
       effects: iconEffects
     };
@@ -295,7 +324,10 @@ ${animation === 'shake' ? `
       border: 'none',
       opacity: '1',
       transform: 'none',
-      filter: 'none'
+      filter: 'none',
+      text: 'アイコンテキスト',
+      iconPosition: 'left',
+      textSpacing: '8'
     });
     setIconEffects({
       hover: false,
@@ -343,12 +375,12 @@ ${animation === 'shake' ? `
     URL.revokeObjectURL(url);
   };
 
-  const renderIcon = () => {
+  const renderIconWithTextColor = (textColor?: string) => {
     const IconComponent = availableIcons[iconConfig.iconName as keyof typeof availableIcons];
     
     return (
       <div 
-        className={iconConfig.className}
+        className={`${iconConfig.className}-container`}
         style={{
           '--icon-size': `${iconConfig.size}px`,
           '--icon-color': iconEffects.gradient ? 'url(#icon-gradient)' : iconConfig.color,
@@ -360,7 +392,8 @@ ${animation === 'shake' ? `
           '--icon-opacity': iconConfig.opacity,
           '--icon-transform': iconConfig.transform,
           '--icon-filter': iconConfig.filter,
-          '--icon-shadow': iconEffects.shadow
+          '--icon-shadow': iconEffects.shadow,
+          '--icon-text-spacing': `${iconConfig.textSpacing}px`
         } as React.CSSProperties}
       >
         {iconEffects.gradient && (
@@ -373,15 +406,27 @@ ${animation === 'shake' ? `
             </defs>
           </svg>
         )}
-        <IconComponent 
-          size={iconConfig.size} 
-          strokeWidth={iconConfig.strokeWidth}
-          style={{
-            fill: iconEffects.gradient ? 'url(#icon-gradient)' : 'none'
-          }}
-        />
+        <div className={iconConfig.className}>
+          <IconComponent 
+            size={iconConfig.size} 
+            strokeWidth={iconConfig.strokeWidth}
+            style={{
+              fill: iconEffects.gradient ? 'url(#icon-gradient)' : 'none'
+            }}
+          />
+        </div>
+        <span 
+          className={`${iconConfig.className}-text`}
+          style={textColor ? { color: textColor } : {}}
+        >
+          {iconConfig.text}
+        </span>
       </div>
     );
+  };
+
+  const renderIcon = () => {
+    return renderIconWithTextColor();
   };
 
   return (
@@ -589,6 +634,49 @@ ${animation === 'shake' ? `
                   className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  テキスト
+                </label>
+                <input
+                  type="text"
+                  value={iconConfig.text}
+                  onChange={(e) => setIconConfig({...iconConfig, text: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="アイコンテキスト"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    アイコンの位置
+                  </label>
+                  <select
+                    value={iconConfig.iconPosition}
+                    onChange={(e) => setIconConfig({...iconConfig, iconPosition: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="left">左側</option>
+                    <option value="right">右側</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    テキストとの間隔 (px)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="50"
+                    value={iconConfig.textSpacing}
+                    onChange={(e) => setIconConfig({...iconConfig, textSpacing: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Effects */}
@@ -790,20 +878,18 @@ ${animation === 'shake' ? `
                 <div className="grid grid-cols-3 gap-4">
                   <div className="bg-white p-4 rounded-lg flex items-center justify-center">
                     {renderIcon()}
-                    <span className="ml-2 text-gray-600 text-sm">Light</span>
                   </div>
                   <div className="bg-gray-600 p-4 rounded-lg flex items-center justify-center">
-                    {renderIcon()}
-                    <span className="ml-2 text-white text-sm">Dark</span>
+                    {renderIconWithTextColor('white')}
                   </div>
                   <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-4 rounded-lg flex items-center justify-center">
-                    {renderIcon()}
-                    <span className="ml-2 text-white text-sm">Gradient</span>
+                    {renderIconWithTextColor('white')}
                   </div>
                 </div>
                 
                 <div className="text-xs text-gray-400 text-center">
-                  Icon: {iconConfig.iconName} | Size: {iconConfig.size}px | Color: {iconConfig.color}
+                  Icon: {iconConfig.iconName} | Size: {iconConfig.size}px | Color: {iconConfig.color}<br/>
+                  Position: {iconConfig.iconPosition} | Spacing: {iconConfig.textSpacing}px | Text: "{iconConfig.text}"
                 </div>
               </div>
             )}

@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Settings, 
-  Type, 
-  Ruler, 
-  Download, 
-  RotateCcw
+import {
+Settings,
+Type,
+Ruler,
+Download,
+RotateCcw,
+Copy
 } from 'lucide-react';
 import { useDesignSystem } from './DesignSystemProvider';
-import { generateSizesFromModularSystem } from '../utils/generators';
+import { 
+  generateSizesFromModularSystem,
+  generateCalculatedCSSVariables
+} from '../utils/generators';
 import type { ModularScale, ModularSystemConfig, GeneratedSizes, SizeUnit } from '../types';
 
 // 一般的なモジュラースケール比率
@@ -58,12 +62,20 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
   );
 
   const [activeTab, setActiveTab] = useState<'typography' | 'spacing'>('typography');
+  const [calculatedVariables, setCalculatedVariables] = useState<{
+    fontVariables: string;
+    spacingVariables: string;
+  }>({ fontVariables: '', spacingVariables: '' });
 
   // 生成されたサイズを更新
   useEffect(() => {
     // generators.tsの関数を使用して、単位変換も含めて正しく生成
     const newGeneratedSizes = generateSizesFromModularSystem(config);
     setGeneratedSizes(newGeneratedSizes);
+    
+    // 計算式形式のCSS変数を生成
+    const newCalculatedVariables = generateCalculatedCSSVariables(config, newGeneratedSizes);
+    setCalculatedVariables(newCalculatedVariables);
     
     // コンテキストに更新を通知
     updateModularSystem(config, newGeneratedSizes);
@@ -87,7 +99,10 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
   const exportConfig = () => {
     const exportData = {
       modularSystemConfig: config,
-      generatedSizes: generatedSizes,
+      calculatedVariables: {
+        fontVariables: calculatedVariables.fontVariables.split('\n'),
+        spacingVariables: calculatedVariables.spacingVariables.split('\n')
+      },
       generatedAt: new Date().toISOString()
     };
     
@@ -99,6 +114,22 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  // CSS変数をクリップボードにコピー
+  const copyToClipboard = () => {
+    const content = activeTab === 'typography' 
+      ? `:root {\n${calculatedVariables.fontVariables}\n}`
+      : `:root {\n${calculatedVariables.spacingVariables}\n}`;
+    
+    navigator.clipboard.writeText(content).then(() => {
+      // 簡単な成功フィードバック（実際のアプリではトースト通知など）
+      console.log('CSS変数をクリップボードにコピーしました');
+    }).catch(err => {
+      console.error('コピーに失敗しました:', err);
+    });
+  };
+
+
 
   return (
     <div className={`bg-gray-900 text-white max-w-7xl mx-auto p-6 space-y-6 ${className || ''}`}>
@@ -296,17 +327,25 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
 
             {/* 生成されたCSS変数 */}
             <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4">生成されたCSS変数</h3>
-              <div className="bg-gray-900 rounded p-4 max-h-64 overflow-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">生成されたCSS変数</h3>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={copyToClipboard}
+                    className="flex items-center px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-xs"
+                  >
+                    <Copy className="w-3 h-3 mr-1" />
+                    コピー
+                  </button>
+                </div>
+              </div>
+              
+              <div className="bg-gray-900 rounded p-4 max-h-80 overflow-auto">
                 <pre className="text-xs">
                   <code className="text-green-400">
                     {activeTab === 'typography' 
-                      ? Object.entries(generatedSizes.fontSizes)
-                          .map(([key, value]) => `--text-${key}: ${value};`)
-                          .join('\n')
-                      : Object.entries(generatedSizes.spacing)
-                          .map(([key, value]) => `--space-${key}: ${value};`)
-                          .join('\n')
+                      ? calculatedVariables.fontVariables
+                      : calculatedVariables.spacingVariables
                     }
                   </code>
                 </pre>

@@ -148,6 +148,149 @@ export const generateJSON = (sections: Section[], designSystem: DesignSystem) =>
   };
 };
 
+// CSS変数を計算式で生成（基準値と比率を使用）
+export const generateCalculatedCSSVariables = (
+  config: ModularSystemConfig,
+  generatedSizes: GeneratedSizes
+): { fontVariables: string; spacingVariables: string } => {
+  const baseFontSizeVar = `--base-font-size: ${config.baseFontSize}px;`;
+  const fontRatioVar = `--font-ratio: ${config.fontScale.ratio};`;
+  const baseSpacingVar = `--base-spacing: ${config.baseSpacing}px;`;
+  const spacingRatioVar = `--spacing-ratio: ${config.spacingScale.ratio};`;
+
+  // フォントサイズの計算式を生成
+  const fontCalculations: string[] = [baseFontSizeVar, fontRatioVar];
+  const spacingCalculations: string[] = [baseSpacingVar, spacingRatioVar];
+
+  // フォントサイズのステップと計算式
+  const fontSteps = {
+    'xxs': -6,
+    'xs': -5,
+    'xs-plus': -4,
+    'sm': -3,
+    'sm-plus': -2,
+    'base': 0,
+    'base-plus': 1,
+    'lg': 2,
+    'xl': 3,
+    '2xl': 4,
+    '3xl': 5,
+    '4xl': 6,
+    '5xl': 7,
+    '6xl': 8
+  };
+
+  // スペーシングのステップと計算式
+  const spacingSteps = {
+    'xxs': -6,
+    'xs': -5,
+    'xs-plus': -4,
+    'sm': -3,
+    'sm-plus': -2,
+    'md': 0,
+    'md-plus': 1,
+    'lg': 2,
+    'xl': 3,
+    '2xl': 4,
+    '3xl': 5,
+    '4xl': 6,
+    '5xl': 7,
+    '6xl': 8
+  };
+
+  // フォントサイズの計算式を生成
+  Object.entries(fontSteps).forEach(([key, step]) => {
+    const variableName = `--text-${key}`;
+    if (step === 0) {
+      fontCalculations.push(`${variableName}: var(--base-font-size); /* ${generatedSizes.fontSizes[key] || 'N/A'} */`);
+    } else if (step === 1) {
+      fontCalculations.push(`${variableName}: calc(var(--base-font-size) * var(--font-ratio)); /* ${generatedSizes.fontSizes[key] || 'N/A'} */`);
+    } else if (step === -1) {
+      fontCalculations.push(`${variableName}: calc(var(--base-font-size) / var(--font-ratio)); /* ${generatedSizes.fontSizes[key] || 'N/A'} */`);
+    } else if (step > 1) {
+      // 複数ステップの場合はpow関数を使用
+      let calculation = 'calc(var(--base-font-size)';
+      for (let i = 0; i < step; i++) {
+        calculation += ' * var(--font-ratio)';
+      }
+      calculation += ')';
+      fontCalculations.push(`${variableName}: ${calculation}; /* ${generatedSizes.fontSizes[key] || 'N/A'} */`);
+    } else {
+      // 負のステップの場合
+      let calculation = 'calc(var(--base-font-size)';
+      for (let i = 0; i < Math.abs(step); i++) {
+        calculation += ' / var(--font-ratio)';
+      }
+      calculation += ')';
+      fontCalculations.push(`${variableName}: ${calculation}; /* ${generatedSizes.fontSizes[key] || 'N/A'} */`);
+    }
+  });
+
+  // スペーシングの計算式を生成
+  Object.entries(spacingSteps).forEach(([key, step]) => {
+    const variableName = `--space-${key}`;
+    if (step === 0) {
+      spacingCalculations.push(`${variableName}: var(--base-spacing); /* ${generatedSizes.spacing[key] || 'N/A'} */`);
+    } else if (step === 1) {
+      spacingCalculations.push(`${variableName}: calc(var(--base-spacing) * var(--spacing-ratio)); /* ${generatedSizes.spacing[key] || 'N/A'} */`);
+    } else if (step === -1) {
+      spacingCalculations.push(`${variableName}: calc(var(--base-spacing) / var(--spacing-ratio)); /* ${generatedSizes.spacing[key] || 'N/A'} */`);
+    } else if (step > 1) {
+      // 複数ステップの場合
+      let calculation = 'calc(var(--base-spacing)';
+      for (let i = 0; i < step; i++) {
+        calculation += ' * var(--spacing-ratio)';
+      }
+      calculation += ')';
+      spacingCalculations.push(`${variableName}: ${calculation}; /* ${generatedSizes.spacing[key] || 'N/A'} */`);
+    } else {
+      // 負のステップの場合
+      let calculation = 'calc(var(--base-spacing)';
+      for (let i = 0; i < Math.abs(step); i++) {
+        calculation += ' / var(--spacing-ratio)';
+      }
+      calculation += ')';
+      spacingCalculations.push(`${variableName}: ${calculation}; /* ${generatedSizes.spacing[key] || 'N/A'} */`);
+    }
+  });
+
+  return {
+    fontVariables: fontCalculations.join('\n'),
+    spacingVariables: spacingCalculations.join('\n')
+  };
+};
+
+// 現在の固定値から計算式への変換関数
+export const analyzeAndGenerateFormula = (fontSizes: Record<string, string>) => {
+  // 現在の値からベースサイズと比率を解析
+  const baseValue = parseFloat(fontSizes.base || '16');
+  
+  // 隣接するサイズから比率を計算
+  const ratios: number[] = [];
+  const keys = Object.keys(fontSizes);
+  
+  for (let i = 1; i < keys.length; i++) {
+    const current = parseFloat(fontSizes[keys[i]]);
+    const previous = parseFloat(fontSizes[keys[i-1]]);
+    if (current && previous) {
+      ratios.push(current / previous);
+    }
+  }
+  
+  // 平均比率を計算
+  const averageRatio = ratios.reduce((sum, ratio) => sum + ratio, 0) / ratios.length;
+  
+  return {
+    baseFontSize: baseValue,
+    ratio: Math.round(averageRatio * 1000) / 1000,
+    analysis: {
+      detectedRatios: ratios,
+      averageRatio,
+      consistency: ratios.every(r => Math.abs(r - averageRatio) < 0.1)
+    }
+  };
+};
+
 // CSS生成（モジュラーシステム対応）
 export const generateCSS = (designSystem: DesignSystem) => {
   const { colors, typography, breakpoints } = designSystem;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Download, Eye, Code, RotateCcw, Layers, X, Info, CheckCircle, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ImposterLayoutGenerator = () => {
@@ -33,6 +33,27 @@ const ImposterLayoutGenerator = () => {
 
   const [activeTab, setActiveTab] = useState('visual');
   const [showPreview, setShowPreview] = useState(false);
+
+  // Handle escape key to close preview
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showPreview) {
+        setShowPreview(false);
+      }
+    };
+
+    if (showPreview) {
+      document.addEventListener('keydown', handleEscapeKey);
+      // Prevent background scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+      // Restore background scroll when modal is closed
+      document.body.style.overflow = 'auto';
+    };
+  }, [showPreview]);
 
   // Generate CSS for Imposter component
   const generateCSS = () => {
@@ -802,6 +823,65 @@ const ImposterLayoutGenerator = () => {
                     <code className="text-indigo-400">{JSON.stringify(generateJSON(), null, 2)}</code>
                   </pre>
                 </div>
+                <div>
+                  <h4 className="font-medium mb-2 text-white">HTML使用例</h4>
+                  <pre className="bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto">
+                    <code className="text-blue-400">{(() => {
+                      const { className } = imposterConfig;
+                      const { title, content, showCloseButton } = imposterContent;
+                      
+                      const closeButtonHtml = showCloseButton 
+                        ? `\n    <button class="${className}-close" aria-label="Close">\n      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">\n        <line x1="18" y1="6" x2="6" y2="18"></line>\n        <line x1="6" y1="6" x2="18" y2="18"></line>\n      </svg>\n    </button>`
+                        : '';
+                      
+                      return `<div class="${className}">
+  <div class="${className}-content">${closeButtonHtml}
+    <h3>${title}</h3>
+    <p>${content}</p>
+  </div>
+</div>`;
+                    })()}</code>
+                  </pre>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2 text-white">JavaScript使用例</h4>
+                  <pre className="bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto">
+                    <code className="text-yellow-400">{(() => {
+                      const { className } = imposterConfig;
+                      
+                      return `// Show Imposter
+function showImposter() {
+  const imposter = document.querySelector('.${className}');
+  imposter.style.display = 'flex';
+  document.body.style.overflow = 'hidden'; // Prevent background scroll
+}
+
+// Hide Imposter
+function hideImposter() {
+  const imposter = document.querySelector('.${className}');
+  imposter.style.display = 'none';
+  document.body.style.overflow = 'auto'; // Restore background scroll
+}
+
+// Close on background click
+document.querySelector('.${className}').addEventListener('click', function(e) {
+  if (e.target === this) {
+    hideImposter();
+  }
+});
+
+// Close on close button click
+document.querySelector('.${className}-close')?.addEventListener('click', hideImposter);
+
+// Close on Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    hideImposter();
+  }
+});`;
+                    })()}</code>
+                  </pre>
+                </div>
               </div>
             )}
           </div>
@@ -811,7 +891,15 @@ const ImposterLayoutGenerator = () => {
         {showPreview && (
           <>
             <style dangerouslySetInnerHTML={{ __html: generateCSS() }} />
-            <div className={imposterConfig.className}>
+            <div 
+              className={imposterConfig.className}
+              onClick={(e) => {
+                // Close modal when clicking the background (not the content)
+                if (e.target === e.currentTarget) {
+                  setShowPreview(false);
+                }
+              }}
+            >
               {renderPreviewContent()}
             </div>
           </>

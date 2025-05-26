@@ -154,6 +154,44 @@ ${enableResponsive ? `
     return css;
   };
 
+  // Generate HTML structure
+  const generateHTML = () => {
+    let contentHTML = '';
+    
+    if (containerContent.showSampleContent) {
+      switch (containerContent.sampleType) {
+        case 'text':
+          contentHTML = `  <h2>Sample Heading</h2>
+  <p>This is a sample paragraph demonstrating how content looks within the container. The container provides proper spacing and maximum width constraints to ensure optimal readability across different screen sizes.</p>
+  <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>`;
+          break;
+        case 'grid':
+          contentHTML = `  <div class="grid">
+    <div class="card">Card 1</div>
+    <div class="card">Card 2</div>
+    <div class="card">Card 3</div>
+    <div class="card">Card 4</div>
+    <div class="card">Card 5</div>
+    <div class="card">Card 6</div>
+  </div>`;
+          break;
+        case 'hero':
+          contentHTML = `  <div class="hero">
+    <h1>Hero Section</h1>
+    <p>This is a sample hero section within a container</p>
+    <button>Call to Action</button>
+  </div>`;
+          break;
+        default:
+          contentHTML = `  ${containerContent.customContent}`;
+      }
+    } else {
+      contentHTML = `  ${containerContent.customContent}`;
+    }
+    
+    return `<div class="${containerConfig.className}">\n${contentHTML}\n</div>`;
+  };
+
   // Generate JSON structure
   const generateJSON = () => {
     return {
@@ -815,6 +853,12 @@ ${enableResponsive ? `
                   <h4 className="font-medium mb-2 text-white">JSON</h4>
                   <pre className="bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto max-h-64 overflow-y-auto">
                     <code className="text-indigo-400">{JSON.stringify(generateJSON(), null, 2)}</code>
+                  </pre>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2 text-white">HTML使用例</h4>
+                  <pre className="bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto max-h-64 overflow-y-auto">
+                    <code className="text-orange-400">{generateHTML()}</code>
                   </pre>
                 </div>
               </div>

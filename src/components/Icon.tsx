@@ -220,6 +220,33 @@ ${animation === 'shake' ? `
     return css;
   };
 
+  // Generate HTML structure
+  const generateHTML = () => {
+    const { className, iconName, text, iconPosition } = iconConfig;
+    
+    // Generate basic SVG placeholder for the icon
+    const iconSVG = `<svg class="${className}-svg" width="${iconConfig.size}" height="${iconConfig.size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${iconConfig.strokeWidth}" stroke-linecap="round" stroke-linejoin="round">
+      <!-- ${iconName} icon paths would go here -->
+      <title>${iconName}</title>
+    </svg>`;
+    
+    let contentHTML = '';
+    
+    if (iconPosition === 'left') {
+      contentHTML = `  <div class="${className}">
+    ${iconSVG}
+  </div>
+  <span class="${className}-text">${text}</span>`;
+    } else {
+      contentHTML = `  <span class="${className}-text">${text}</span>
+  <div class="${className}">
+    ${iconSVG}
+  </div>`;
+    }
+    
+    return `<div class="${className}-container">\n${contentHTML}\n</div>`;
+  };
+
   // Generate JSON structure
   const generateJSON = () => {
     return {
@@ -906,6 +933,12 @@ ${animation === 'shake' ? `
                   <h4 className="font-medium mb-2 text-white">JSON</h4>
                   <pre className="bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto max-h-64 overflow-y-auto">
                     <code className="text-indigo-400">{JSON.stringify(generateJSON(), null, 2)}</code>
+                  </pre>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2 text-white">HTML使用例</h4>
+                  <pre className="bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto max-h-64 overflow-y-auto">
+                    <code className="text-purple-400">{generateHTML()}</code>
                   </pre>
                 </div>
               </div>

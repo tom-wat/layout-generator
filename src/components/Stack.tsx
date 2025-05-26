@@ -178,6 +178,31 @@ const StackLayoutGenerator = () => {
     return css;
   };
 
+  // Generate HTML with nested structure
+  const generateHTML = (): string => {
+    const generateElementHTML = (elements: StackElement[], level: number = 0): string => {
+      return elements.map((element: StackElement) => {
+        const indent = '  '.repeat(level + 1);
+        
+        if (element.isStack) {
+          const nestedClassName = `${stackConfig.className}-nested-${element.id}`;
+          const childrenHTML = element.children.length > 0 
+            ? '\n' + generateElementHTML(element.children, level + 1) + '\n' + indent
+            : '';
+          return `${indent}<div class="${nestedClassName}">${childrenHTML}</div>`;
+        } else {
+          const childrenHTML = element.children.length > 0 
+            ? '\n' + generateElementHTML(element.children, level + 1) + '\n' + indent
+            : '';
+          return `${indent}<${element.tag}>${element.content}${childrenHTML}</${element.tag}>`;
+        }
+      }).join('\n');
+    };
+
+    const elementsHTML = generateElementHTML(elements);
+    return `<div class="${stackConfig.className}">${elementsHTML ? '\n' + elementsHTML + '\n' : ''}</div>`;
+  };
+
   // Generate JSON with nested structure
   const generateJSON = (): JSONOutput => {
     const convertElementsToJSON = (elements: StackElement[]): JSONElement[] => {
@@ -713,6 +738,12 @@ const StackLayoutGenerator = () => {
                   <h4 className="font-medium mb-2 text-white">JSON</h4>
                   <pre className="bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto max-h-64 overflow-y-auto">
                     <code className="text-blue-400">{JSON.stringify(generateJSON(), null, 2)}</code>
+                  </pre>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2 text-white">HTML使用例</h4>
+                  <pre className="bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto max-h-64 overflow-y-auto">
+                    <code className="text-orange-400">{generateHTML()}</code>
                   </pre>
                 </div>
               </div>

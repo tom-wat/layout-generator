@@ -93,6 +93,28 @@ const CoverLayoutGenerator = () => {
     return css;
   };
 
+  // Generate HTML structure
+  const generateHTML = () => {
+    let contentHTML = '';
+    
+    if (coverContent.top) {
+      contentHTML += `  <div class="top-content">${coverContent.top}</div>\n`;
+    }
+    
+    if (coverContent.center) {
+      contentHTML += `  <div class="main-content">${coverContent.center}</div>\n`;
+    }
+    
+    if (coverContent.bottom) {
+      contentHTML += `  <div class="bottom-content">${coverContent.bottom}</div>`;
+    }
+    
+    // Remove trailing newline if it exists
+    contentHTML = contentHTML.replace(/\n$/, '');
+    
+    return `<div class="${coverConfig.className}">\n${contentHTML}\n</div>`;
+  };
+
   // Generate JSON structure
   const generateJSON = () => {
     return {
@@ -515,6 +537,12 @@ const CoverLayoutGenerator = () => {
                   <h4 className="font-medium mb-2 text-white">JSON</h4>
                   <pre className="bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto max-h-64 overflow-y-auto">
                     <code className="text-orange-400">{JSON.stringify(generateJSON(), null, 2)}</code>
+                  </pre>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2 text-white">HTML使用例</h4>
+                  <pre className="bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto max-h-64 overflow-y-auto">
+                    <code className="text-blue-400">{generateHTML()}</code>
                   </pre>
                 </div>
               </div>

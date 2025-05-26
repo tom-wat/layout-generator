@@ -548,6 +548,31 @@ const ReelLayoutGenerator = () => {
                     <code className="text-indigo-400">{JSON.stringify(generateJSON(), null, 2)}</code>
                   </pre>
                 </div>
+                <div>
+                  <h4 className="font-medium mb-2 text-white">HTML使用例</h4>
+                  <pre className="bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto">
+                    <code className="text-blue-400">{(() => {
+                      const { className } = reelConfig;
+                      const itemsHtml = reelItems.map(item => {
+                        if (item.type === 'image') {
+                          return `  <div class="reel-item">
+    <img src="${item.content}" alt="${item.title}" />
+    <h3>${item.title}</h3>
+  </div>`;
+                        } else {
+                          return `  <div class="reel-item">
+    <div class="content">${item.content}</div>
+    <h3>${item.title}</h3>
+  </div>`;
+                        }
+                      }).join('\n');
+                      
+                      return `<div class="${className}">
+${itemsHtml}
+</div>`;
+                    })()}</code>
+                  </pre>
+                </div>
               </div>
             )}
           </div>

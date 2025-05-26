@@ -133,6 +133,15 @@ const GridAreaLayoutGenerator = () => {
     return css;
   };
 
+  // Generate HTML structure
+  const generateHTML = () => {
+    const areasHTML = areaContents.map((area) => {
+      return `  <${area.tag} class="area-${area.name}">${area.content}</${area.tag}>`;
+    }).join('\n');
+    
+    return `<div class="${gridAreaConfig.className}">\n${areasHTML}\n</div>`;
+  };
+
   // Generate JSON structure
   const generateJSON = () => {
     return {
@@ -533,6 +542,12 @@ const GridAreaLayoutGenerator = () => {
                   <h4 className="font-medium mb-2 text-white">JSON</h4>
                   <pre className="bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto max-h-64 overflow-y-auto">
                     <code className="text-teal-400">{JSON.stringify(generateJSON(), null, 2)}</code>
+                  </pre>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2 text-white">HTML使用例</h4>
+                  <pre className="bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto max-h-64 overflow-y-auto">
+                    <code className="text-orange-400">{generateHTML()}</code>
                   </pre>
                 </div>
               </div>

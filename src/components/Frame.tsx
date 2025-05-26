@@ -598,6 +598,38 @@ const FrameLayoutGenerator = () => {
                     <code className="text-indigo-400">{JSON.stringify(generateJSON(), null, 2)}</code>
                   </pre>
                 </div>
+                <div>
+                  <h4 className="font-medium mb-2 text-white">HTML使用例</h4>
+                  <pre className="bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto">
+                    <code className="text-blue-400">{(() => {
+                      const { className } = frameConfig;
+                      const { type, src, alt, content } = frameContent;
+                      
+                      switch (type) {
+                        case 'image':
+                          return `<div class="${className}">
+  <img src="${src}" alt="${alt}" />
+</div>`;
+                        case 'video':
+                          return `<div class="${className}">
+  <video controls>
+    <source src="${src}" />
+    Your browser does not support the video tag.
+  </video>
+</div>`;
+                        case 'iframe':
+                          return `<div class="${className}">
+  <iframe src="${src}" title="Frame content"></iframe>
+</div>`;
+                        case 'text':
+                        default:
+                          return `<div class="${className}">
+  <div>${content}</div>
+</div>`;
+                      }
+                    })()}</code>
+                  </pre>
+                </div>
               </div>
             )}
           </div>

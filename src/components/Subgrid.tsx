@@ -145,6 +145,25 @@ const SubgridLayoutGenerator = () => {
     return css;
   };
 
+  // Generate HTML structure
+  const generateHTML = () => {
+    const itemsHTML = gridItems.map((item) => {
+      if (item.isSubgrid && item.subgridConfig) {
+        // Generate subgrid container with nested items
+        const subItemsHTML = item.subgridConfig.items.map((subItem) => {
+          return `    <${subItem.tag} class="subgrid-item">${subItem.content}</${subItem.tag}>`;
+        }).join('\n');
+        
+        return `  <${item.tag} class="subgrid-${item.id}">\n${subItemsHTML}\n  </${item.tag}>`;
+      } else {
+        // Generate regular grid item
+        return `  <${item.tag} class="grid-item">${item.content}</${item.tag}>`;
+      }
+    }).join('\n');
+    
+    return `<div class="${parentGridConfig.className}">\n${itemsHTML}\n</div>`;
+  };
+
   // Generate JSON structure
   const generateJSON = () => {
     return {
@@ -725,6 +744,12 @@ const SubgridLayoutGenerator = () => {
                   <h4 className="font-medium mb-2 text-white">JSON</h4>
                   <pre className="bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto max-h-64 overflow-y-auto">
                     <code className="text-emerald-400">{JSON.stringify(generateJSON(), null, 2)}</code>
+                  </pre>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2 text-white">HTML使用例</h4>
+                  <pre className="bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto max-h-64 overflow-y-auto">
+                    <code className="text-orange-400">{generateHTML()}</code>
                   </pre>
                 </div>
               </div>

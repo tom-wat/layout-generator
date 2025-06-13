@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { 
   Layers, Package, Target, Grid as GridIcon, PanelLeft, ToggleLeft, 
   RectangleVertical, Grid3X3, Layout, Network, Frame, Film, Eye, 
@@ -39,6 +39,43 @@ type AppMode = typeof APP_MODES[keyof typeof APP_MODES];
 function App() {
   const [appMode, setAppMode] = useState<AppMode>(APP_MODES.COMPONENT_EDITOR);
   const [activeGenerator, setActiveGenerator] = useState('stack');
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, scrollLeft: 0 });
+  const componentNavRef = useRef<HTMLElement>(null);
+
+  // ドラッグスクロール処理
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!componentNavRef.current) return;
+    
+    // ボタンクリックの場合はドラッグを開始しない
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    
+    setIsDragging(true);
+    setDragStart({ 
+      x: e.clientX, 
+      scrollLeft: componentNavRef.current.scrollLeft 
+    });
+    
+    e.preventDefault();
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !componentNavRef.current) return;
+    
+    e.preventDefault();
+    const deltaX = e.clientX - dragStart.x;
+    componentNavRef.current.scrollLeft = dragStart.scrollLeft - deltaX;
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
 
   return (
     <DesignSystemProvider>
@@ -101,7 +138,16 @@ function App() {
       {appMode === APP_MODES.COMPONENT_EDITOR && (
         <div className="bg-gray-800 border-b border-gray-700">
           <div className="max-w-7xl mx-auto px-6 py-2">
-            <nav className="flex space-x-4 overflow-x-auto min-w-0 flex-1 custom-scrollbar">
+            <nav 
+              ref={componentNavRef}
+              className={`flex space-x-4 overflow-x-auto min-w-0 flex-1 custom-scrollbar ${
+                isDragging ? 'cursor-grabbing' : 'cursor-grab'
+              }`}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseLeave}
+            >
               <button
                 onClick={() => setActiveGenerator('stack')}
                 className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors flex-shrink-0 ${

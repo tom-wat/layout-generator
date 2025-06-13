@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
 Settings,
 Type,
@@ -64,6 +64,9 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
   );
 
   const [activeTab, setActiveTab] = useState<'typography' | 'spacing' | 'utilities' | 'fluid'>('typography');
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, scrollLeft: 0 });
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showExportOptions, setShowExportOptions] = useState(false);
   const [exportSettings, setExportSettings] = useState({
     typography: true,
@@ -104,6 +107,35 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
       max: number;
     }>
   });
+
+  // ドラッグスクロール処理
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollContainerRef.current) return;
+    
+    setIsDragging(true);
+    setDragStart({ 
+      x: e.clientX, 
+      scrollLeft: scrollContainerRef.current.scrollLeft 
+    });
+    
+    e.preventDefault();
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollContainerRef.current) return;
+    
+    e.preventDefault();
+    const deltaX = e.clientX - dragStart.x;
+    scrollContainerRef.current.scrollLeft = dragStart.scrollLeft - deltaX;
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
 
   // フルイドタイポグラフィのCSS変数を生成
   const generateFluidTypographyCSS = useCallback((config: typeof fluidConfig) => {
@@ -191,7 +223,7 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
 
   // JSON形式でエクスポート
   const exportConfig = () => {
-    const exportData: any = {
+    const exportData: Record<string, unknown> = {
       generatedAt: new Date().toISOString()
     };
 
@@ -455,51 +487,51 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
       </div>
 
       {/* タブ切替 */}
-      <div className="flex space-x-1 bg-gray-800 rounded-lg p-1">
-        <button
-          onClick={() => setActiveTab('typography')}
-          className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'typography'
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-300 hover:text-white hover:bg-gray-700'
-          }`}
-        >
-          <Type className="w-4 h-4 mr-2" />
-          タイポグラフィ
-        </button>
-        <button
-          onClick={() => setActiveTab('spacing')}
-          className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'spacing'
-              ? 'bg-purple-600 text-white'
-              : 'text-gray-300 hover:text-white hover:bg-gray-700'
-          }`}
-        >
-          <Ruler className="w-4 h-4 mr-2" />
-          スペーシング
-        </button>
-        <button
-          onClick={() => setActiveTab('utilities')}
-          className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'utilities'
-              ? 'bg-green-600 text-white'
-              : 'text-gray-300 hover:text-white hover:bg-gray-700'
-          }`}
-        >
-          <Settings className="w-4 h-4 mr-2" />
-          ユーティリティ
-        </button>
-        <button
-          onClick={() => setActiveTab('fluid')}
-          className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'fluid'
-              ? 'bg-orange-600 text-white'
-              : 'text-gray-300 hover:text-white hover:bg-gray-700'
-          }`}
-        >
-          <Layers className="w-4 h-4 mr-2" />
-          フルイド
-        </button>
+      <div 
+        ref={scrollContainerRef}
+        className={`flex space-x-1 bg-gray-800 rounded-lg p-1 overflow-x-auto scrollbar-hide ${
+          isDragging ? 'cursor-grabbing' : 'cursor-grab'
+        }`}
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+      >
+        {['typography', 'spacing', 'utilities', 'fluid'].map((tab) => {
+          const tabConfigs = {
+            typography: { icon: Type, label: 'タイポグラフィ', color: 'blue' },
+            spacing: { icon: Ruler, label: 'スペーシング', color: 'purple' },
+            utilities: { icon: Settings, label: 'ユーティリティ', color: 'green' },
+            fluid: { icon: Layers, label: 'フルイド', color: 'orange' }
+          };
+          
+          const tabConfig = tabConfigs[tab as keyof typeof tabConfigs];
+          if (!tabConfig) return null;
+          
+          const IconComponent = tabConfig.icon;
+          
+          return (
+            <button
+              key={tab}
+              onClick={(e) => {
+                if (!isDragging) {
+                  setActiveTab(tab as typeof activeTab);
+                }
+                e.stopPropagation();
+              }}
+              className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 select-none whitespace-nowrap pointer-events-auto ${
+                activeTab === tab
+                  ? `bg-${tabConfig.color}-600 text-white shadow-lg`
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }`}
+              style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
+            >
+              <IconComponent className="w-4 h-4 mr-2" />
+              {tabConfig.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* メインコンテンツ */}

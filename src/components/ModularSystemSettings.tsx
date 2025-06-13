@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
 Settings,
 Type,
 Ruler,
 Download,
 RotateCcw,
-Copy
+Copy,
+Layers,
+ChevronDown
 } from 'lucide-react';
 import { useDesignSystem } from './DesignSystemProvider';
 import { 
@@ -61,11 +63,19 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
     }
   );
 
-  const [activeTab, setActiveTab] = useState<'typography' | 'spacing' | 'utilities'>('typography');
+  const [activeTab, setActiveTab] = useState<'typography' | 'spacing' | 'utilities' | 'fluid'>('typography');
+  const [showExportOptions, setShowExportOptions] = useState(false);
+  const [exportSettings, setExportSettings] = useState({
+    typography: true,
+    spacing: true,
+    utilities: true,
+    fluid: true
+  });
   const [calculatedVariables, setCalculatedVariables] = useState<{
     fontVariables: string;
     spacingVariables: string;
-  }>({ fontVariables: '', spacingVariables: '' });
+    fluidVariables: string;
+  }>({ fontVariables: '', spacingVariables: '', fluidVariables: '' });
 
   const [utilityConfig, setUtilityConfig] = useState({
     baseMargin: 16,
@@ -77,8 +87,72 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
     paddingUnit: 'rem' as SizeUnit,
     generateMargin: true,
     generatePadding: true,
-    generateNegativeMargin: true
+    generateNegativeMargin: false
   });
+
+  const [fluidConfig, setFluidConfig] = useState({
+    rootFontSize: 16,
+    viewportMin: 375,
+    viewportMax: 1200,
+    fontSizeMin: 14,
+    fontSizeMax: 16,
+    generateForAllElements: true,
+    generateBodyDefaults: true,
+    customSizes: [] as Array<{
+      name: string;
+      min: number;
+      max: number;
+    }>
+  });
+
+  // フルイドタイポグラフィのCSS変数を生成
+  const generateFluidTypographyCSS = useCallback((config: typeof fluidConfig) => {
+    const lines: string[] = [];
+    
+    if (config.generateForAllElements) {
+      lines.push('*,');
+      lines.push('::before,');
+      lines.push('::after {');
+      lines.push(`  --clamp-root-font-size: ${config.rootFontSize};`);
+      lines.push('  --clamp-slope: calc((var(--clamp-max) - var(--clamp-min)) / (var(--clamp-viewport-max) - var(--clamp-viewport-min)));');
+      lines.push('  --clamp-y-axis-intersection: calc(var(--clamp-min) - (var(--clamp-slope) * var(--clamp-viewport-min)));');
+      lines.push('  --clamp-preferred-value: calc(');
+      lines.push('    var(--clamp-y-axis-intersection) * (1rem / var(--clamp-root-font-size)) + (var(--clamp-slope) * 100vi)');
+      lines.push('  );');
+      lines.push('  --clamp: clamp(');
+      lines.push('    calc(var(--clamp-min) * (1rem / var(--clamp-root-font-size))),');
+      lines.push('    var(--clamp-preferred-value),');
+      lines.push('    calc(var(--clamp-max) * (1rem / var(--clamp-root-font-size)))');
+      lines.push('  );');
+      lines.push('');
+      lines.push('  font-size: var(--clamp);');
+      lines.push('}');
+      lines.push('');
+    }
+    
+    if (config.generateBodyDefaults) {
+      lines.push('body {');
+      lines.push(`  --clamp-viewport-min: ${config.viewportMin};`);
+      lines.push(`  --clamp-viewport-max: ${config.viewportMax};`);
+      lines.push(`  --clamp-min: ${config.fontSizeMin};`);
+      lines.push(`  --clamp-max: ${config.fontSizeMax};`);
+      lines.push('}');
+    }
+    
+    // カスタムサイズ用のCSS変数
+    if (config.customSizes.length > 0) {
+      lines.push('');
+      lines.push('/* Custom fluid sizes */');
+      config.customSizes.forEach(size => {
+        lines.push(`.fluid-${size.name} {`);
+        lines.push(`  --clamp-min: ${size.min};`);
+        lines.push(`  --clamp-max: ${size.max};`);
+        lines.push('}');
+      });
+    }
+    
+    return lines.join('\n');
+  }, []);
 
   // 生成されたサイズを更新
   useEffect(() => {
@@ -88,11 +162,18 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
     
     // 計算式形式のCSS変数を生成
     const newCalculatedVariables = generateCalculatedCSSVariables(config, newGeneratedSizes);
-    setCalculatedVariables(newCalculatedVariables);
+    
+    // フルイドタイポグラフィのCSS変数を生成
+    const fluidVariables = generateFluidTypographyCSS(fluidConfig);
+    
+    setCalculatedVariables({
+      ...newCalculatedVariables,
+      fluidVariables
+    });
     
     // コンテキストに更新を通知
     updateModularSystem(config, newGeneratedSizes);
-  }, [config, updateModularSystem]);
+  }, [config, fluidConfig, updateModularSystem, generateFluidTypographyCSS]);
 
   // 設定をリセット
   const resetConfig = () => {
@@ -110,14 +191,51 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
 
   // JSON形式でエクスポート
   const exportConfig = () => {
-    const exportData = {
-      modularSystemConfig: config,
-      calculatedVariables: {
-        fontVariables: calculatedVariables.fontVariables.split('\n'),
-        spacingVariables: calculatedVariables.spacingVariables.split('\n')
-      },
+    const exportData: any = {
       generatedAt: new Date().toISOString()
     };
+
+    // タイポグラフィ
+    if (exportSettings.typography) {
+      exportData.typography = {
+        config: {
+          baseFontSize: config.baseFontSize,
+          fontScale: config.fontScale,
+          fontUnit: config.fontUnit,
+          steps: config.steps
+        },
+        cssVariables: calculatedVariables.fontVariables.split('\n')
+      };
+    }
+
+    // スペーシング
+    if (exportSettings.spacing) {
+      exportData.spacing = {
+        config: {
+          baseSpacing: config.baseSpacing,
+          spacingScale: config.spacingScale,
+          spacingUnit: config.spacingUnit,
+          steps: config.steps
+        },
+        cssVariables: calculatedVariables.spacingVariables.split('\n')
+      };
+    }
+
+    // ユーティリティ
+    if (exportSettings.utilities) {
+      exportData.utilities = {
+        config: utilityConfig,
+        generatedClasses: generateUtilityClasses().split('\n')
+      };
+    }
+
+    // フルイド
+    if (exportSettings.fluid) {
+      exportData.fluid = {
+        config: fluidConfig,
+        cssVariables: calculatedVariables.fluidVariables.split('\n')
+      };
+    }
     
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -126,6 +244,7 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
     a.download = 'modular-system-config.json';
     a.click();
     URL.revokeObjectURL(url);
+    setShowExportOptions(false);
   };
 
   // ユーティリティクラス専用のサイズ生成
@@ -135,7 +254,11 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
     
     // マージンサイズ生成
     if (utilityConfig.generateMargin) {
-      for (let i = 0; i < utilityConfig.steps; i++) {
+      // 0: 0のマージン
+      marginSizes['0'] = '0';
+      
+      // 1以降: スケールに基づいた値
+      for (let i = 1; i <= utilityConfig.steps; i++) {
         const size = utilityConfig.baseMargin * Math.pow(utilityConfig.marginScale.ratio, i - Math.floor(utilityConfig.steps / 2));
         const convertedSize = convertUtilityValue(size, utilityConfig.marginUnit);
         marginSizes[i.toString()] = convertedSize;
@@ -144,7 +267,11 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
     
     // パディングサイズ生成
     if (utilityConfig.generatePadding) {
-      for (let i = 0; i < utilityConfig.steps; i++) {
+      // 0: 0のパディング
+      paddingSizes['0'] = '0';
+      
+      // 1以降: スケールに基づいた値
+      for (let i = 1; i <= utilityConfig.steps; i++) {
         const size = utilityConfig.basePadding * Math.pow(utilityConfig.paddingScale.ratio, i - Math.floor(utilityConfig.steps / 2));
         const convertedSize = convertUtilityValue(size, utilityConfig.paddingUnit);
         paddingSizes[i.toString()] = convertedSize;
@@ -167,7 +294,6 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
         return `${Math.round(pxValue)}px`;
     }
   };
-
 
   // ユーティリティクラスを生成
   const generateUtilityClasses = () => {
@@ -225,6 +351,8 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
       ? `:root {\n${calculatedVariables.fontVariables}\n}`
       : activeTab === 'spacing'
       ? `:root {\n${calculatedVariables.spacingVariables}\n}`
+      : activeTab === 'fluid'
+      ? calculatedVariables.fluidVariables
       : generateUtilityClasses();
     
     navigator.clipboard.writeText(content).then(() => {
@@ -253,13 +381,76 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
             <RotateCcw className="w-4 h-4 mr-1" />
             リセット
           </button>
-          <button
-            onClick={exportConfig}
-            className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 rounded text-sm"
-          >
-            <Download className="w-4 h-4 mr-1" />
-            エクスポート
-          </button>
+          
+          {/* エクスポート設定 */}
+          <div className="relative">
+            <button 
+              onClick={() => setShowExportOptions(!showExportOptions)}
+              className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 rounded text-sm"
+            >
+              <Download className="w-4 h-4 mr-1" />
+              エクスポート
+              <ChevronDown className={`w-3 h-3 ml-1 transition-transform ${showExportOptions ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {showExportOptions && (
+              <div className="absolute right-0 mt-2 w-72 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-4 z-10">
+                <h4 className="text-sm font-medium mb-3 text-white">エクスポート内容を選択</h4>
+                <div className="space-y-3">
+                  <label className="flex items-center">
+                    <input 
+                      type="checkbox" 
+                      checked={exportSettings.typography}
+                      onChange={(e) => setExportSettings(prev => ({ ...prev, typography: e.target.checked }))}
+                      className="rounded border-gray-600 text-green-600 focus:ring-green-500 focus:ring-offset-gray-800"
+                    />
+                    <span className="ml-2 text-sm text-gray-300">タイポグラフィ（設定 + CSS変数）</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input 
+                      type="checkbox" 
+                      checked={exportSettings.spacing}
+                      onChange={(e) => setExportSettings(prev => ({ ...prev, spacing: e.target.checked }))}
+                      className="rounded border-gray-600 text-green-600 focus:ring-green-500 focus:ring-offset-gray-800"
+                    />
+                    <span className="ml-2 text-sm text-gray-300">スペーシング（設定 + CSS変数）</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input 
+                      type="checkbox" 
+                      checked={exportSettings.utilities}
+                      onChange={(e) => setExportSettings(prev => ({ ...prev, utilities: e.target.checked }))}
+                      className="rounded border-gray-600 text-green-600 focus:ring-green-500 focus:ring-offset-gray-800"
+                    />
+                    <span className="ml-2 text-sm text-gray-300">ユーティリティ（設定 + クラス）</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input 
+                      type="checkbox" 
+                      checked={exportSettings.fluid}
+                      onChange={(e) => setExportSettings(prev => ({ ...prev, fluid: e.target.checked }))}
+                      className="rounded border-gray-600 text-green-600 focus:ring-green-500 focus:ring-offset-gray-800"
+                    />
+                    <span className="ml-2 text-sm text-gray-300">フルイド（設定 + CSS）</span>
+                  </label>
+                </div>
+                <div className="flex items-center space-x-2 mt-4 pt-3 border-t border-gray-700">
+                  <button 
+                    onClick={() => setShowExportOptions(false)}
+                    className="flex-1 px-3 py-2 text-gray-300 hover:text-white text-sm"
+                  >
+                    キャンセル
+                  </button>
+                  <button 
+                    onClick={exportConfig}
+                    className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 rounded text-sm text-white"
+                  >
+                    エクスポート実行
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -298,13 +489,24 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
           <Settings className="w-4 h-4 mr-2" />
           ユーティリティ
         </button>
+        <button
+          onClick={() => setActiveTab('fluid')}
+          className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'fluid'
+              ? 'bg-orange-600 text-white'
+              : 'text-gray-300 hover:text-white hover:bg-gray-700'
+          }`}
+        >
+          <Layers className="w-4 h-4 mr-2" />
+          フルイド
+        </button>
       </div>
 
       {/* メインコンテンツ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 設定パネル */}
         <div className="space-y-6">
-            {activeTab === 'typography' ? (
+          {activeTab === 'typography' ? (
               <div className="bg-gray-800 rounded-lg p-6 space-y-4">
                 <h3 className="text-lg font-semibold flex items-center">
                   <Type className="w-5 h-5 mr-2 text-blue-400" />
@@ -440,7 +642,7 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
                   </div>
                 </div>
               </div>
-            ) : (
+            ) : activeTab === 'utilities' ? (
               <div className="bg-gray-800 rounded-lg p-6 space-y-4">
                 <h3 className="text-lg font-semibold flex items-center">
                   <Settings className="w-5 h-5 mr-2 text-green-400" />
@@ -635,37 +837,165 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
                   </div>
                 </div>
               </div>
-            )}
+            ) : activeTab === 'fluid' ? (
+              <div className="bg-gray-800 rounded-lg p-6 space-y-4">
+                <h3 className="text-lg font-semibold flex items-center">
+                  <Layers className="w-5 h-5 mr-2 text-orange-400" />
+                  フルイドタイポグラフィ設定
+                </h3>
+                
+                <div className="text-sm text-gray-300 mb-4">
+                  ビューポートサイズに応じて滑らかにスケールするフルイドタイポグラフィを設定します。
+                </div>
 
-            {/* 生成されたCSS変数 */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">生成されたCSS変数</h3>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={copyToClipboard}
-                    className="flex items-center px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-xs"
-                  >
-                    <Copy className="w-3 h-3 mr-1" />
-                    コピー
-                  </button>
+                {/* ルートフォントサイズ */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    ルートフォントサイズ (px)
+                  </label>
+                  <input
+                    type="number"
+                    value={fluidConfig.rootFontSize}
+                    onChange={(e) => setFluidConfig(prev => ({ ...prev, rootFontSize: Number(e.target.value) }))}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    min="12"
+                    max="24"
+                    step="1"
+                  />
+                </div>
+
+                {/* ビューポート設定 */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      最小ビューポート (px)
+                    </label>
+                    <input
+                      type="number"
+                      value={fluidConfig.viewportMin}
+                      onChange={(e) => setFluidConfig(prev => ({ ...prev, viewportMin: Number(e.target.value) }))}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      min="320"
+                      max="768"
+                      step="1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      最大ビューポート (px)
+                    </label>
+                    <input
+                      type="number"
+                      value={fluidConfig.viewportMax}
+                      onChange={(e) => setFluidConfig(prev => ({ ...prev, viewportMax: Number(e.target.value) }))}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      min="768"
+                      max="1920"
+                      step="1"
+                    />
+                  </div>
+                </div>
+
+                {/* フォントサイズ設定 */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      最小フォントサイズ (px)
+                    </label>
+                    <input
+                      type="number"
+                      value={fluidConfig.fontSizeMin}
+                      onChange={(e) => setFluidConfig(prev => ({ ...prev, fontSizeMin: Number(e.target.value) }))}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      min="10"
+                      max="24"
+                      step="1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      最大フォントサイズ (px)
+                    </label>
+                    <input
+                      type="number"
+                      value={fluidConfig.fontSizeMax}
+                      onChange={(e) => setFluidConfig(prev => ({ ...prev, fontSizeMax: Number(e.target.value) }))}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      min="12"
+                      max="32"
+                      step="1"
+                    />
+                  </div>
+                </div>
+
+                {/* 生成オプション */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={fluidConfig.generateForAllElements}
+                        onChange={(e) => setFluidConfig(prev => ({ ...prev, generateForAllElements: e.target.checked }))}
+                        className="rounded border-gray-600 text-orange-600 focus:ring-orange-500"
+                      />
+                      <span className="text-sm text-gray-300">全要素にフルイドタイポグラフィを適用</span>
+                    </label>
+                    <div className="text-xs text-gray-400 mt-1 ml-6">
+                      *, ::before, ::after セレクタで全要素にフルイドフォントサイズを適用
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={fluidConfig.generateBodyDefaults}
+                        onChange={(e) => setFluidConfig(prev => ({ ...prev, generateBodyDefaults: e.target.checked }))}
+                        className="rounded border-gray-600 text-orange-600 focus:ring-orange-500"
+                      />
+                      <span className="text-sm text-gray-300">bodyにデフォルト値を設定</span>
+                    </label>
+                    <div className="text-xs text-gray-400 mt-1 ml-6">
+                      body要素にビューポートとフォントサイズのデフォルト値を設定
+                    </div>
+                  </div>
                 </div>
               </div>
-              
-              <div className="bg-gray-900 rounded p-4 max-h-80 overflow-auto">
-                <pre className="text-xs">
-                  <code className="text-green-400">
-                    {activeTab === 'typography' 
-                      ? calculatedVariables.fontVariables
-                      : activeTab === 'spacing'
-                      ? calculatedVariables.spacingVariables
-                      : generateUtilityClasses()
-                    }
-                  </code>
-                </pre>
+            ) : null}
+
+          {/* 生成されたCSS変数 */}
+          <div className="bg-gray-800 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">生成されたCSS変数</h3>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={copyToClipboard}
+                  className="flex items-center px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-xs"
+                >
+                  <Copy className="w-3 h-3 mr-1" />
+                  コピー
+                </button>
               </div>
             </div>
+            
+            <div className="bg-gray-900 rounded p-4 max-h-80 overflow-auto">
+              <pre className="text-xs">
+                <code className="text-green-400">
+                  {activeTab === 'typography' 
+                    ? calculatedVariables.fontVariables
+                    : activeTab === 'spacing'
+                    ? calculatedVariables.spacingVariables
+                    : activeTab === 'fluid'
+                    ? calculatedVariables.fluidVariables
+                    : generateUtilityClasses()
+                  }
+                </code>
+              </pre>
+            </div>
           </div>
+        </div>
 
         {/* プレビューパネル */}
         <div className="space-y-6">
@@ -786,6 +1116,75 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
                     </div>
                   );
                 })()}
+              </div>
+            </div>
+          ) : activeTab === 'fluid' ? (
+            <div className="bg-gray-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold mb-4">フルイドタイポグラフィプレビュー</h3>
+              <div className="space-y-6">
+                {/* 設定値の表示 */}
+                <div>
+                  <h4 className="text-md font-medium mb-3 text-orange-400">現在の設定</h4>
+                  <div className="bg-gray-900 p-4 rounded space-y-2">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="space-y-1">
+                        <div className="text-gray-300">ビューポート範囲:</div>
+                        <div className="text-orange-400">{fluidConfig.viewportMin}px - {fluidConfig.viewportMax}px</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-gray-300">フォントサイズ範囲:</div>
+                        <div className="text-orange-400">{fluidConfig.fontSizeMin}px - {fluidConfig.fontSizeMax}px</div>
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t border-gray-700">
+                      <div className="text-gray-300 text-sm">計算式:</div>
+                      <div className="text-xs text-gray-400 font-mono mt-1">
+                        clamp({fluidConfig.fontSizeMin / 16}rem, calc({(fluidConfig.fontSizeMin - (fluidConfig.fontSizeMax - fluidConfig.fontSizeMin) / (fluidConfig.viewportMax - fluidConfig.viewportMin) * fluidConfig.viewportMin).toFixed(4)}rem + {((fluidConfig.fontSizeMax - fluidConfig.fontSizeMin) / (fluidConfig.viewportMax - fluidConfig.viewportMin) * 100).toFixed(4)}vi), {fluidConfig.fontSizeMax / 16}rem)
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* プレビューサンプル */}
+                <div>
+                  <h4 className="text-md font-medium mb-3 text-orange-400">プレビューサンプル</h4>
+                  <div className="bg-gray-900 p-6 rounded space-y-4">
+                    <div className="text-white text-center">
+                      <div style={{ 
+                        fontSize: `clamp(${fluidConfig.fontSizeMin / 16}rem, calc(${(fluidConfig.fontSizeMin - (fluidConfig.fontSizeMax - fluidConfig.fontSizeMin) / (fluidConfig.viewportMax - fluidConfig.viewportMin) * fluidConfig.viewportMin).toFixed(4)}rem + ${((fluidConfig.fontSizeMax - fluidConfig.fontSizeMin) / (fluidConfig.viewportMax - fluidConfig.viewportMin) * 100).toFixed(4)}vi), ${fluidConfig.fontSizeMax / 16}rem)`
+                      }}>
+                        フルイドタイポグラフィのサンプルテキスト
+                      </div>
+                      <div className="text-xs text-gray-400 mt-2">
+                        ブラウザの幅を変更して、フォントサイズの変化を確認してください
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 各ビューポートでの計算値 */}
+                <div>
+                  <h4 className="text-md font-medium mb-3 text-orange-400">ビューポート別計算値</h4>
+                  <div className="bg-gray-900 p-4 rounded">
+                    <div className="space-y-2 text-sm">
+                      {[320, 480, 768, 1024, 1200, 1440].map(viewport => {
+                        let fontSize = fluidConfig.fontSizeMin;
+                        if (viewport >= fluidConfig.viewportMax) {
+                          fontSize = fluidConfig.fontSizeMax;
+                        } else if (viewport > fluidConfig.viewportMin) {
+                          const ratio = (viewport - fluidConfig.viewportMin) / (fluidConfig.viewportMax - fluidConfig.viewportMin);
+                          fontSize = fluidConfig.fontSizeMin + (fluidConfig.fontSizeMax - fluidConfig.fontSizeMin) * ratio;
+                        }
+                        return (
+                          <div key={viewport} className="flex justify-between items-center">
+                            <span className="text-gray-300">{viewport}px:</span>
+                            <span className="text-orange-400 font-mono">{fontSize.toFixed(2)}px ({(fontSize / 16).toFixed(4)}rem)</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           ) : (

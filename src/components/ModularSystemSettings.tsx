@@ -5,8 +5,7 @@ Type,
 Ruler,
 Download,
 RotateCcw,
-Copy,
-Calculator
+Copy
 } from 'lucide-react';
 import { useDesignSystem } from './DesignSystemProvider';
 import { 
@@ -169,22 +168,6 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
     }
   };
 
-  // 単位を変換する関数（従来の）
-  const convertValue = (value: string, targetUnit: 'px' | 'rem' | 'modular') => {
-    if (targetUnit === 'modular') return value;
-    
-    // px値を抽出
-    const pxValue = parseFloat(value.replace(/[^\d.]/g, ''));
-    
-    switch (targetUnit) {
-      case 'px':
-        return `${pxValue}px`;
-      case 'rem':
-        return `${(pxValue / 16).toFixed(4)}rem`;
-      default:
-        return value;
-    }
-  };
 
   // ユーティリティクラスを生成
   const generateUtilityClasses = () => {

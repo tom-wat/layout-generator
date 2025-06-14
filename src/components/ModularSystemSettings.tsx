@@ -515,17 +515,17 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
             <button
               key={tab}
               onClick={(e) => {
-                if (!isDragging) {
-                  setActiveTab(tab as typeof activeTab);
-                }
+                e.stopPropagation();
+                setActiveTab(tab as typeof activeTab);
+              }}
+              onMouseDown={(e) => {
                 e.stopPropagation();
               }}
-              className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 select-none whitespace-nowrap pointer-events-auto ${
+              className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 select-none whitespace-nowrap ${
                 activeTab === tab
                   ? `bg-${tabConfig.color}-600 text-white shadow-lg`
                   : 'text-gray-300 hover:text-white hover:bg-gray-700'
               }`}
-              style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
             >
               <IconComponent className="w-4 h-4 mr-2" />
               {tabConfig.label}

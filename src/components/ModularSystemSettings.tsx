@@ -80,18 +80,6 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
     fluidVariables: string;
   }>({ fontVariables: '', spacingVariables: '', fluidVariables: '' });
 
-  const [utilityConfig, setUtilityConfig] = useState({
-    baseMargin: 16,
-    basePadding: 16,
-    marginScale: MODULAR_SCALES[3], // Major Third
-    paddingScale: MODULAR_SCALES[3], // Major Third
-    steps: 10,
-    marginUnit: 'rem' as SizeUnit,
-    paddingUnit: 'rem' as SizeUnit,
-    generateMargin: true,
-    generatePadding: true,
-    generateNegativeMargin: false
-  });
 
   const [fluidConfig, setFluidConfig] = useState({
     rootFontSize: 16,
@@ -256,7 +244,7 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
     // ユーティリティ
     if (exportSettings.utilities) {
       exportData.utilities = {
-        config: utilityConfig,
+        description: 'CSS変数ベースのユーティリティクラス',
         generatedClasses: generateUtilityClasses().split('\n')
       };
     }
@@ -279,100 +267,89 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
     setShowExportOptions(false);
   };
 
-  // ユーティリティクラス専用のサイズ生成
-  const generateUtilitySizes = () => {
-    const marginSizes: Record<string, string> = {};
-    const paddingSizes: Record<string, string> = {};
-    
-    // マージンサイズ生成
-    if (utilityConfig.generateMargin) {
-      // 0: 0のマージン
-      marginSizes['0'] = '0';
-      
-      // 1以降: スケールに基づいた値
-      for (let i = 1; i <= utilityConfig.steps; i++) {
-        const size = utilityConfig.baseMargin * Math.pow(utilityConfig.marginScale.ratio, i - Math.floor(utilityConfig.steps / 2));
-        const convertedSize = convertUtilityValue(size, utilityConfig.marginUnit);
-        marginSizes[i.toString()] = convertedSize;
-      }
-    }
-    
-    // パディングサイズ生成
-    if (utilityConfig.generatePadding) {
-      // 0: 0のパディング
-      paddingSizes['0'] = '0';
-      
-      // 1以降: スケールに基づいた値
-      for (let i = 1; i <= utilityConfig.steps; i++) {
-        const size = utilityConfig.basePadding * Math.pow(utilityConfig.paddingScale.ratio, i - Math.floor(utilityConfig.steps / 2));
-        const convertedSize = convertUtilityValue(size, utilityConfig.paddingUnit);
-        paddingSizes[i.toString()] = convertedSize;
-      }
-    }
-    
-    return { marginSizes, paddingSizes };
-  };
 
-  // ユーティリティ値の単位変換
-  const convertUtilityValue = (pxValue: number, targetUnit: SizeUnit) => {
-    switch (targetUnit) {
-      case 'px':
-        return `${Math.round(pxValue)}px`;
-      case 'rem':
-        return `${(pxValue / 16).toFixed(4)}rem`;
-      case 'em':
-        return `${(pxValue / 16).toFixed(4)}em`;
-      default:
-        return `${Math.round(pxValue)}px`;
-    }
-  };
-
-  // ユーティリティクラスを生成
+  // ユーティリティクラスを生成（CSS変数ベース）
   const generateUtilityClasses = () => {
     const classes: string[] = [];
-    const { marginSizes, paddingSizes } = generateUtilitySizes();
     
-    // マージンクラス
-    if (utilityConfig.generateMargin) {
-      Object.entries(marginSizes).forEach(([key, size]) => {
-        classes.push(`.m-${key} { margin: ${size}; }`);
-        classes.push(`.mt-${key} { margin-top: ${size}; }`);
-        classes.push(`.mr-${key} { margin-right: ${size}; }`);
-        classes.push(`.mb-${key} { margin-bottom: ${size}; }`);
-        classes.push(`.ml-${key} { margin-left: ${size}; }`);
-        classes.push(`.mx-${key} { margin-left: ${size}; margin-right: ${size}; }`);
-        classes.push(`.my-${key} { margin-top: ${size}; margin-bottom: ${size}; }`);
-      });
+    // CSS変数定義
+    classes.push('/* Base CSS Variables */');
+    classes.push(':root {');
+    classes.push(`  --base-spacing: ${config.baseSpacing}px;`);
+    classes.push(`  --spacing-ratio: ${config.spacingScale.ratio};`);
+    classes.push('');
+    
+    // 計算式でスペーシング変数を生成
+    // スケールのステップ数を取得
+    const spacingKeys = Object.keys(generatedSizes.spacing);
+    const baseIndex = spacingKeys.indexOf('md') !== -1 ? spacingKeys.indexOf('md') : Math.floor(spacingKeys.length / 2);
+    
+    spacingKeys.forEach((key, index) => {
+      const stepFromBase = index - baseIndex;
+      const actualValue = generatedSizes.spacing[key]; // 実際の計算値を取得
       
-      // ネガティブマージン
-      if (utilityConfig.generateNegativeMargin) {
-        classes.push('');
-        Object.entries(marginSizes).forEach(([key, size]) => {
-          const negativeSize = size.replace(/^(\d)/, '-$1');
-          classes.push(`.-m-${key} { margin: ${negativeSize}; }`);
-          classes.push(`.-mt-${key} { margin-top: ${negativeSize}; }`);
-          classes.push(`.-mr-${key} { margin-right: ${negativeSize}; }`);
-          classes.push(`.-mb-${key} { margin-bottom: ${negativeSize}; }`);
-          classes.push(`.-ml-${key} { margin-left: ${negativeSize}; }`);
-          classes.push(`.-mx-${key} { margin-left: ${negativeSize}; margin-right: ${negativeSize}; }`);
-          classes.push(`.-my-${key} { margin-top: ${negativeSize}; margin-bottom: ${negativeSize}; }`);
-        });
+      if (stepFromBase === 0) {
+        // ベースサイズ
+        classes.push(`  --space-${key}: var(--base-spacing); /* ${actualValue} */`);
+      } else if (stepFromBase > 0) {
+        // ベースより大きいサイズ
+        const calculations = [];
+        for (let i = 0; i < stepFromBase; i++) {
+          calculations.push('var(--spacing-ratio)');
+        }
+        classes.push(`  --space-${key}: calc(var(--base-spacing) * ${calculations.join(' * ')}); /* ${actualValue} */`);
+      } else {
+        // ベースより小さいサイズ
+        const calculations = [];
+        for (let i = 0; i < Math.abs(stepFromBase); i++) {
+          calculations.push('var(--spacing-ratio)');
+        }
+        classes.push(`  --space-${key}: calc(var(--base-spacing) / ${calculations.join(' / ')}); /* ${actualValue} */`);
       }
-    }
+    });
+    classes.push('}');
+    classes.push('');
+    
+    // CSS変数ベースのスペーシングユーティリティクラス
+    classes.push('/* CSS Variable-based Spacing Utilities */');
+    classes.push('');
     
     // パディングクラス
-    if (utilityConfig.generatePadding) {
-      classes.push('');
-      Object.entries(paddingSizes).forEach(([key, size]) => {
-        classes.push(`.p-${key} { padding: ${size}; }`);
-        classes.push(`.pt-${key} { padding-top: ${size}; }`);
-        classes.push(`.pr-${key} { padding-right: ${size}; }`);
-        classes.push(`.pb-${key} { padding-bottom: ${size}; }`);
-        classes.push(`.pl-${key} { padding-left: ${size}; }`);
-        classes.push(`.px-${key} { padding-left: ${size}; padding-right: ${size}; }`);
-        classes.push(`.py-${key} { padding-top: ${size}; padding-bottom: ${size}; }`);
-      });
-    }
+    classes.push('/* Padding Utilities */');
+    ['xxs', 'xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'].forEach(size => {
+      classes.push(`.p-${size} { padding: var(--space-${size}); }`);
+      classes.push(`.px-${size} { padding-left: var(--space-${size}); padding-right: var(--space-${size}); }`);
+      classes.push(`.py-${size} { padding-top: var(--space-${size}); padding-bottom: var(--space-${size}); }`);
+      classes.push(`.pt-${size} { padding-top: var(--space-${size}); }`);
+      classes.push(`.pr-${size} { padding-right: var(--space-${size}); }`);
+      classes.push(`.pb-${size} { padding-bottom: var(--space-${size}); }`);
+      classes.push(`.pl-${size} { padding-left: var(--space-${size}); }`);
+    });
+    
+    classes.push('');
+    
+    // マージンクラス
+    classes.push('/* Margin Utilities */');
+    ['xxs', 'xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'].forEach(size => {
+      classes.push(`.m-${size} { margin: var(--space-${size}); }`);
+      classes.push(`.mx-${size} { margin-left: var(--space-${size}); margin-right: var(--space-${size}); }`);
+      classes.push(`.my-${size} { margin-top: var(--space-${size}); margin-bottom: var(--space-${size}); }`);
+      classes.push(`.mt-${size} { margin-top: var(--space-${size}); }`);
+      classes.push(`.mr-${size} { margin-right: var(--space-${size}); }`);
+      classes.push(`.mb-${size} { margin-bottom: var(--space-${size}); }`);
+      classes.push(`.ml-${size} { margin-left: var(--space-${size}); }`);
+    });
+    
+    classes.push('.mx-auto { margin-left: auto; margin-right: auto; }');
+    classes.push('');
+    
+    // ギャップクラス
+    classes.push('/* Gap Utilities */');
+    ['xxs', 'xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'].forEach(size => {
+      classes.push(`.gap-${size} { gap: var(--space-${size}); }`);
+      classes.push(`.gap-x-${size} { column-gap: var(--space-${size}); }`);
+      classes.push(`.gap-y-${size} { row-gap: var(--space-${size}); }`);
+    });
     
     return classes.join('\n');
   };
@@ -678,195 +655,51 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
               <div className="bg-gray-800 rounded-lg p-6 space-y-4">
                 <h3 className="text-lg font-semibold flex items-center">
                   <Settings className="w-5 h-5 mr-2 text-green-400" />
-                  ユーティリティ設定
+                  CSS変数ベースユーティリティ
                 </h3>
                 
-                <div className="text-sm text-gray-300 mb-4">
-                  マージン・パディングのユーティリティクラス専用の設定です。
-                </div>
-                
-                {/* ベースサイズ設定 */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      ベースマージン (px)
-                    </label>
-                    <input
-                      type="number"
-                      value={utilityConfig.baseMargin}
-                      onChange={(e) => setUtilityConfig(prev => ({ ...prev, baseMargin: Number(e.target.value) }))}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      min="4"
-                      max="32"
-                      step="1"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      ベースパディング (px)
-                    </label>
-                    <input
-                      type="number"
-                      value={utilityConfig.basePadding}
-                      onChange={(e) => setUtilityConfig(prev => ({ ...prev, basePadding: Number(e.target.value) }))}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      min="4"
-                      max="32"
-                      step="1"
-                    />
+
+                {/* 現在のスペーシング設定表示 */}
+                <div className="bg-gray-900 p-4 rounded">
+                  <h4 className="text-sm font-medium text-green-400 mb-3">現在のスペーシング設定</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div className="text-gray-400">ベーススペーシング:</div>
+                      <div className="text-white font-mono">{config.baseSpacing}px</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-400">スケール比率:</div>
+                      <div className="text-white font-mono">{config.spacingScale.name} ({config.spacingScale.ratio})</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-400">単位:</div>
+                      <div className="text-white font-mono">{config.spacingUnit}</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-400">生成サイズ数:</div>
+                      <div className="text-white font-mono">{Object.keys(generatedSizes.spacing).length}個</div>
+                    </div>
                   </div>
                 </div>
 
-                {/* スケール比率設定 */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      マージンスケール比率
-                    </label>
-                    <select
-                      value={utilityConfig.marginScale.name}
-                      onChange={(e) => {
-                        const selectedScale = MODULAR_SCALES.find(scale => scale.name === e.target.value);
-                        if (selectedScale) {
-                          setUtilityConfig(prev => ({ ...prev, marginScale: selectedScale }));
-                        }
-                      }}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-green-500"
-                    >
-                      {MODULAR_SCALES.map((scale) => (
-                        <option key={scale.name} value={scale.name}>
-                          {scale.name} ({scale.ratio})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      パディングスケール比率
-                    </label>
-                    <select
-                      value={utilityConfig.paddingScale.name}
-                      onChange={(e) => {
-                        const selectedScale = MODULAR_SCALES.find(scale => scale.name === e.target.value);
-                        if (selectedScale) {
-                          setUtilityConfig(prev => ({ ...prev, paddingScale: selectedScale }));
-                        }
-                      }}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-green-500"
-                    >
-                      {MODULAR_SCALES.map((scale) => (
-                        <option key={scale.name} value={scale.name}>
-                          {scale.name} ({scale.ratio})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* ステップ数設定 */}
+                {/* 利用可能なスペーシングサイズ */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    ステップ数
-                  </label>
-                  <input
-                    type="number"
-                    value={utilityConfig.steps}
-                    onChange={(e) => setUtilityConfig(prev => ({ ...prev, steps: Number(e.target.value) }))}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    min="5"
-                    max="15"
-                    step="1"
-                  />
-                  <div className="text-xs text-gray-400 mt-1">
-                    生成するユーティリティクラスのステップ数
-                  </div>
-                </div>
-
-                {/* 単位設定 */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      マージン単位
-                    </label>
-                    <div className="flex space-x-2">
-                      {(['px', 'rem', 'em'] as SizeUnit[]).map((unit) => (
-                        <button
-                          key={unit}
-                          onClick={() => setUtilityConfig(prev => ({ ...prev, marginUnit: unit }))}
-                          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                            utilityConfig.marginUnit === unit
-                              ? 'bg-green-600 text-white'
-                              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                          }`}
-                        >
-                          {unit}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      パディング単位
-                    </label>
-                    <div className="flex space-x-2">
-                      {(['px', 'rem', 'em'] as SizeUnit[]).map((unit) => (
-                        <button
-                          key={unit}
-                          onClick={() => setUtilityConfig(prev => ({ ...prev, paddingUnit: unit }))}
-                          className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                            utilityConfig.paddingUnit === unit
-                              ? 'bg-green-600 text-white'
-                              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                          }`}
-                        >
-                          {unit}
-                        </button>
+                  <h4 className="text-sm font-medium text-green-400 mb-3">利用可能なスペーシングサイズ</h4>
+                  <div className="bg-gray-900 p-4 rounded max-h-60 overflow-y-auto">
+                    <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                      {Object.entries(generatedSizes.spacing).map(([key, size]) => (
+                        <div key={key} className="flex items-center justify-between">
+                          <span className="text-gray-400">--space-{key}:</span>
+                          <span className="text-green-400">{size}</span>
+                        </div>
                       ))}
                     </div>
                   </div>
                 </div>
 
-                {/* 生成オプション */}
-                <div className="space-y-4">
-                  <div>
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={utilityConfig.generateMargin}
-                        onChange={(e) => setUtilityConfig(prev => ({ ...prev, generateMargin: e.target.checked }))}
-                        className="rounded border-gray-600 text-green-600 focus:ring-green-500"
-                      />
-                      <span className="text-sm text-gray-300">マージンユーティリティクラスを生成</span>
-                    </label>
-                  </div>
-                  
-                  <div>
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={utilityConfig.generatePadding}
-                        onChange={(e) => setUtilityConfig(prev => ({ ...prev, generatePadding: e.target.checked }))}
-                        className="rounded border-gray-600 text-green-600 focus:ring-green-500"
-                      />
-                      <span className="text-sm text-gray-300">パディングユーティリティクラスを生成</span>
-                    </label>
-                  </div>
-                  
-                  <div>
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={utilityConfig.generateNegativeMargin}
-                        onChange={(e) => setUtilityConfig(prev => ({ ...prev, generateNegativeMargin: e.target.checked }))}
-                        className="rounded border-gray-600 text-green-600 focus:ring-green-500"
-                        disabled={!utilityConfig.generateMargin}
-                      />
-                      <span className={`text-sm ${utilityConfig.generateMargin ? 'text-gray-300' : 'text-gray-500'}`}>ネガティブマージンクラスを生成</span>
-                    </label>
-                  </div>
+                <div className="text-xs text-gray-400 mt-4 p-3 bg-gray-900 rounded">
+                  <div className="font-medium text-gray-300 mb-1">設定を変更するには:</div>
+                  「スペーシング」タブでベーススペーシング、スケール比率、単位を調整してください。変更は即座にユーティリティクラスに反映されます。
                 </div>
               </div>
             ) : activeTab === 'fluid' ? (
@@ -1000,7 +833,9 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
           {/* 生成されたCSS変数 */}
           <div className="bg-gray-800 rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">生成されたCSS変数</h3>
+              <h3 className="text-lg font-semibold">
+                {activeTab === 'utilities' ? '生成されたユーティリティクラス' : '生成されたCSS変数'}
+              </h3>
               <div className="flex items-center space-x-2">
                 <button
                   onClick={copyToClipboard}
@@ -1059,95 +894,103 @@ const ModularSystemSettings: React.FC<ModularSystemSettingsProps> = ({
             </div>
           ) : activeTab === 'utilities' ? (
             <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4">ユーティリティクラスプレビュー</h3>
+              <h3 className="text-lg font-semibold mb-4">CSS変数ベースユーティリティクラス</h3>
               <div className="space-y-6">
-                {/* スケール比率表示 */}
+                {/* 概要説明 */}
                 <div>
-                  <h4 className="text-md font-medium mb-3 text-green-400">設定されたスケール比率</h4>
+                  <h4 className="text-md font-medium mb-3 text-green-400">CSS変数による動的スペーシング</h4>
                   <div className="bg-gray-900 p-4 rounded">
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                      <div>
-                        <div className="text-lg font-bold text-green-400">
-                          {utilityConfig.marginScale.ratio}
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          マージン: {utilityConfig.marginScale.name}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-lg font-bold text-green-400">
-                          {utilityConfig.paddingScale.ratio}
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          パディング: {utilityConfig.paddingScale.name}
-                        </div>
-                      </div>
+                    <div className="text-sm text-gray-300 space-y-2">
+                      <div>• CSS変数 `var(--space-*)` を使用してスペーシングが統一されます</div>
+                      <div>• デザインシステムの設定変更で全ユーティリティクラスが一括更新されます</div>
                     </div>
                   </div>
                 </div>
 
-                {/* マージンクラス */}
-                {utilityConfig.generateMargin && (() => {
-                  const { marginSizes } = generateUtilitySizes();
-                  return (
-                    <div>
-                      <h4 className="text-md font-medium mb-3 text-green-400">マージンクラス（全{Object.keys(marginSizes).length}個）</h4>
-                      <div className="max-h-80 overflow-y-auto">
-                        <div className="grid grid-cols-1 gap-2 text-sm font-mono">
-                          {Object.entries(marginSizes).map(([key, size]) => (
-                            <div key={key} className="flex items-center justify-between bg-gray-900 p-2 rounded">
-                              <span className="text-gray-300">.m-{key}</span>
-                              <span className="text-gray-500">margin: {size};</span>
+                {/* パディングクラス一覧 */}
+                <div>
+                  <h4 className="text-md font-medium mb-3 text-green-400">パディングユーティリティ（56個）</h4>
+                  <div className="max-h-80 overflow-y-auto">
+                    <div className="grid grid-cols-1 gap-2 text-sm font-mono">
+                      {['xxs', 'xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'].map(size => (
+                        <div key={size} className="space-y-1">
+                          <div className="flex items-center justify-between bg-gray-900 p-2 rounded">
+                            <span className="text-gray-300">.p-{size}</span>
+                            <span className="text-gray-500">padding: var(--space-{size});</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1">
+                            <div className="flex items-center justify-between bg-gray-900 p-2 rounded text-xs">
+                              <span className="text-gray-300">.px-{size}</span>
+                              <span className="text-gray-500">padding-x: var(--space-{size});</span>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-                
-                {/* パディングクラス */}
-                {utilityConfig.generatePadding && (() => {
-                  const { paddingSizes } = generateUtilitySizes();
-                  return (
-                    <div>
-                      <h4 className="text-md font-medium mb-3 text-green-400">パディングクラス（全{Object.keys(paddingSizes).length}個）</h4>
-                      <div className="max-h-80 overflow-y-auto">
-                        <div className="grid grid-cols-1 gap-2 text-sm font-mono">
-                          {Object.entries(paddingSizes).map(([key, size]) => (
-                            <div key={key} className="flex items-center justify-between bg-gray-900 p-2 rounded">
-                              <span className="text-gray-300">.p-{key}</span>
-                              <span className="text-gray-500">padding: {size};</span>
+                            <div className="flex items-center justify-between bg-gray-900 p-2 rounded text-xs">
+                              <span className="text-gray-300">.py-{size}</span>
+                              <span className="text-gray-500">padding-y: var(--space-{size});</span>
                             </div>
-                          ))}
+                          </div>
                         </div>
-                      </div>
+                      ))}
                     </div>
-                  );
-                })()}
+                  </div>
+                </div>
                 
-                {/* ネガティブマージンクラス */}
-                {utilityConfig.generateMargin && utilityConfig.generateNegativeMargin && (() => {
-                  const { marginSizes } = generateUtilitySizes();
-                  return (
-                    <div>
-                      <h4 className="text-md font-medium mb-3 text-red-400">ネガティブマージンクラス（全{Object.keys(marginSizes).length}個）</h4>
-                      <div className="max-h-60 overflow-y-auto">
-                        <div className="grid grid-cols-1 gap-2 text-sm font-mono">
-                          {Object.entries(marginSizes).map(([key, size]) => {
-                            const negativeSize = size.replace(/^(\d)/, '-$1');
-                            return (
-                              <div key={key} className="flex items-center justify-between bg-gray-900 p-2 rounded">
-                                <span className="text-gray-300">.-m-{key}</span>
-                                <span className="text-gray-500">margin: {negativeSize};</span>
-                              </div>
-                            );
-                          })}
+                {/* マージンクラス一覧 */}
+                <div>
+                  <h4 className="text-md font-medium mb-3 text-green-400">マージンユーティリティ（57個）</h4>
+                  <div className="max-h-80 overflow-y-auto">
+                    <div className="grid grid-cols-1 gap-2 text-sm font-mono">
+                      {['xxs', 'xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'].map(size => (
+                        <div key={size} className="space-y-1">
+                          <div className="flex items-center justify-between bg-gray-900 p-2 rounded">
+                            <span className="text-gray-300">.m-{size}</span>
+                            <span className="text-gray-500">margin: var(--space-{size});</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1">
+                            <div className="flex items-center justify-between bg-gray-900 p-2 rounded text-xs">
+                              <span className="text-gray-300">.mx-{size}</span>
+                              <span className="text-gray-500">margin-x: var(--space-{size});</span>
+                            </div>
+                            <div className="flex items-center justify-between bg-gray-900 p-2 rounded text-xs">
+                              <span className="text-gray-300">.my-{size}</span>
+                              <span className="text-gray-500">margin-y: var(--space-{size});</span>
+                            </div>
+                          </div>
                         </div>
+                      ))}
+                      <div className="flex items-center justify-between bg-gray-900 p-2 rounded">
+                        <span className="text-gray-300">.mx-auto</span>
+                        <span className="text-gray-500">margin: 0 auto;</span>
                       </div>
                     </div>
-                  );
-                })()}
+                  </div>
+                </div>
+                
+                {/* ギャップクラス一覧 */}
+                <div>
+                  <h4 className="text-md font-medium mb-3 text-green-400">ギャップユーティリティ（24個）</h4>
+                  <div className="max-h-80 overflow-y-auto">
+                    <div className="grid grid-cols-1 gap-2 text-sm font-mono">
+                      {['xxs', 'xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'].map(size => (
+                        <div key={size} className="space-y-1">
+                          <div className="flex items-center justify-between bg-gray-900 p-2 rounded">
+                            <span className="text-gray-300">.gap-{size}</span>
+                            <span className="text-gray-500">gap: var(--space-{size});</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1">
+                            <div className="flex items-center justify-between bg-gray-900 p-2 rounded text-xs">
+                              <span className="text-gray-300">.gap-x-{size}</span>
+                              <span className="text-gray-500">column-gap: var(--space-{size});</span>
+                            </div>
+                            <div className="flex items-center justify-between bg-gray-900 p-2 rounded text-xs">
+                              <span className="text-gray-300">.gap-y-{size}</span>
+                              <span className="text-gray-500">row-gap: var(--space-{size});</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           ) : activeTab === 'fluid' ? (
